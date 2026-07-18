@@ -4,7 +4,7 @@
     "description":  "A search and harvesting gameplay module for D\u0026D 5e on Foundry VTT 13 and 14.",
     "version":  "1.14.0",
     "url":  "https://github.com/NylramWhist/Wildharvest",
-    "manifest":  "https://raw.githubusercontent.com/NylramWhist/Wildharvest/main/wildharvest/module.json",
+    "manifest":  "https://raw.githubusercontent.com/NylramWhist/Wildharvest/main/module.json",
     "download":  "https://github.com/NylramWhist/Wildharvest/releases/download/v1.14.0/Wildharvest-1.14.0.zip",
     "authors":  [
                     {
