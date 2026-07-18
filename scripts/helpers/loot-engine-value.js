@@ -52,7 +52,8 @@ export async function buildValueLoot({ lootPoints, lootSource, pooledDocuments, 
       withinTolerance: selection.withinTolerance,
       invalidPriceCount: selection.invalidPriceCount,
       unaffordableCount: selection.unaffordableCount,
-      duplicateEntryCount: selection.duplicateEntryCount
+      duplicateEntryCount: selection.duplicateEntryCount,
+      maxQuantityPerItem: selection.maxQuantityPerItem
     },
     selection
   };

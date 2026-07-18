@@ -8,6 +8,8 @@ const COPPER_PER_DENOMINATION = Object.freeze({
   cp: 1
 });
 
+export const MAX_VALUE_ITEM_QUANTITY = 5;
+
 export function currencyToCopper(value, denomination = "gp") {
   const numericValue = Number(value);
   const multiplier = COPPER_PER_DENOMINATION[String(denomination ?? "gp").trim().toLowerCase()];
@@ -59,7 +61,17 @@ function isBetterSelection(candidate, current, lowerCopper, targetCopper, upperC
   if (candidateRank.exact !== currentRank.exact) return candidateRank.exact;
   if (candidateRank.accepted !== currentRank.accepted) return candidateRank.accepted;
   if (candidateRank.distance !== currentRank.distance) return candidateRank.distance < currentRank.distance;
+  if (candidate.distinctEntryCount !== current.distinctEntryCount) {
+    return candidate.distinctEntryCount > current.distinctEntryCount;
+  }
   return candidate.entries.length > current.entries.length;
+}
+
+function shouldReplaceEquivalentSelection(candidate, current, random) {
+  if (!current) return true;
+  const candidateWeight = Math.max(1, Number(candidate.distinctEntryCount) || 0);
+  const currentWeight = Math.max(1, Number(current.distinctEntryCount) || 0);
+  return random() < (candidateWeight / (candidateWeight + currentWeight));
 }
 
 function pruneSelectionStates(states, maxStates, lowerCopper, targetCopper, upperCopper) {
@@ -86,7 +98,8 @@ export function selectValueBudgetItems({
   targetGp,
   tolerancePercent = 10,
   random = Math.random,
-  maxStates = 25_000
+  maxStates = 25_000,
+  maxQuantityPerItem = MAX_VALUE_ITEM_QUANTITY
 }) {
   const targetCopper = currencyToCopper(targetGp, "gp") ?? 0;
   const normalizedTolerance = Math.min(100, Math.max(0, Number(tolerancePercent) || 0));
@@ -113,34 +126,46 @@ export function selectValueBudgetItems({
     seenEntryKeys.add(entryKey);
     return true;
   });
-  const orderedCandidates = shuffleEntries(uniqueCandidates, random)
-    .sort((left, right) => left.priceCopper - right.priceCopper);
+  const quantityLimit = Math.min(
+    MAX_VALUE_ITEM_QUANTITY,
+    Math.max(1, Math.trunc(Number(maxQuantityPerItem) || MAX_VALUE_ITEM_QUANTITY))
+  );
+  const boundedCandidates = Array.from(
+    { length: quantityLimit },
+    () => shuffleEntries(uniqueCandidates, random)
+  ).flat();
+  const orderedCandidates = shuffleEntries(boundedCandidates, random);
   const stateLimit = Math.max(100, Math.trunc(Number(maxStates) || 25_000));
-  let states = new Map([[0, { entries: [], totalCopper: 0 }]]);
+  let states = new Map([[0, { entries: [], totalCopper: 0, distinctEntryCount: 0 }]]);
 
   for (const entry of orderedCandidates) {
+    const entryKey = getCompendiumEntryKey(entry);
     const additions = [];
     for (const state of states.values()) {
       const totalCopper = state.totalCopper + entry.priceCopper;
       if (totalCopper > upperCopper) continue;
-      additions.push({ entries: [...state.entries, entry], totalCopper });
+      const alreadySelected = state.entries.some((selected) => getCompendiumEntryKey(selected) === entryKey);
+      additions.push({
+        entries: [...state.entries, entry],
+        totalCopper,
+        distinctEntryCount: state.distinctEntryCount + (alreadySelected ? 0 : 1)
+      });
     }
 
     for (const candidate of additions) {
       const current = states.get(candidate.totalCopper);
-      if (!current || candidate.entries.length > current.entries.length) {
+      if (shouldReplaceEquivalentSelection(candidate, current, random)) {
         states.set(candidate.totalCopper, candidate);
       }
     }
     states = pruneSelectionStates(states, stateLimit, lowerCopper, targetCopper, upperCopper);
-    if (states.has(targetCopper)) break;
   }
 
   let best = null;
   for (const candidate of states.values()) {
     if (isBetterSelection(candidate, best, lowerCopper, targetCopper, upperCopper)) best = candidate;
   }
-  best ??= { entries: [], totalCopper: 0 };
+  best ??= { entries: [], totalCopper: 0, distinctEntryCount: 0 };
 
   return {
     ...best,
@@ -151,6 +176,7 @@ export function selectValueBudgetItems({
     invalidPriceCount,
     unaffordableCount,
     duplicateEntryCount,
+    maxQuantityPerItem: quantityLimit,
     exactTarget: best.totalCopper === targetCopper,
     withinTolerance: best.totalCopper >= lowerCopper && best.totalCopper <= upperCopper
   };

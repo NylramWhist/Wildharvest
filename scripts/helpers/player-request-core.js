@@ -17,6 +17,7 @@ export function buildPlayerDocumentRequest({
   gmUserId,
   decision = "",
   actorId = "",
+  containerId = "",
   extraModifier = 0,
   rollMode = "normal",
   createdAt = Date.now()
@@ -33,6 +34,7 @@ export function buildPlayerDocumentRequest({
     request.decision = String(decision ?? "").trim().toLowerCase();
   } else if (request.type === PLAYER_REQUEST_TYPES.RESOLUTION) {
     request.actorId = normalizeId(actorId);
+    request.containerId = normalizeId(containerId);
     request.extraModifier = Number(extraModifier);
     request.rollMode = String(rollMode ?? "normal").trim().toLowerCase();
   }
@@ -67,12 +69,15 @@ export function isValidPlayerDocumentRequest(request, {
       "gmUserId",
       "createdAt",
       "actorId",
+      "containerId",
       "extraModifier",
       "rollMode"
     ]);
     return Object.keys(request).every((key) => allowedKeys.has(key))
       && typeof request.actorId === "string"
       && request.actorId.length <= MAX_REQUEST_ID_LENGTH
+      && typeof request.containerId === "string"
+      && request.containerId.length <= MAX_REQUEST_ID_LENGTH
       && Number.isFinite(Number(request.extraModifier))
       && ["normal", "advantage", "disadvantage"].includes(request.rollMode);
   }

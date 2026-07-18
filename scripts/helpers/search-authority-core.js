@@ -1,9 +1,15 @@
+import {
+  getActorContainer,
+  normalizeContainerId
+} from "./inventory-container-core.js";
+
 export const MAX_PLAYER_EXTRA_MODIFIER = 100;
 
 export const SEARCH_RESOLUTION_REASONS = Object.freeze({
   ACTOR_NOT_OWNED: "actor-not-owned",
   ACTOR_NOT_FOUND: "actor-not-found",
   INVALID_ACTOR_ID: "invalid-actor-id",
+  INVALID_CONTAINER_ID: "invalid-container-id",
   INVALID_EXTRA_MODIFIER: "invalid-extra-modifier",
   INVALID_ROLL_MODE: "invalid-roll-mode",
   INVALID_SENDER: "invalid-sender",
@@ -33,6 +39,7 @@ export function claimSearchResolution({
   const senderId = String(sender?.id ?? "").trim();
   const gmUserId = String(message?.gmUserId ?? "").trim();
   const actorId = String(message?.actorId ?? "").trim();
+  const requestedContainerId = normalizeContainerId(message?.containerId);
   const rollMode = String(message?.rollMode ?? "normal").trim().toLowerCase();
   const extraModifier = Number(message?.extraModifier ?? 0);
 
@@ -61,6 +68,9 @@ export function claimSearchResolution({
   } else if (message?.actorId != null && typeof message.actorId !== "string") {
     return reject(SEARCH_RESOLUTION_REASONS.INVALID_ACTOR_ID);
   }
+  if (message?.containerId != null && typeof message.containerId !== "string") {
+    return reject(SEARCH_RESOLUTION_REASONS.INVALID_CONTAINER_ID);
+  }
 
   if (!Number.isFinite(extraModifier) || Math.abs(extraModifier) > MAX_PLAYER_EXTRA_MODIFIER) {
     return reject(SEARCH_RESOLUTION_REASONS.INVALID_EXTRA_MODIFIER);
@@ -72,6 +82,9 @@ export function claimSearchResolution({
   entry.status = "resolving";
   entry.actorId = actorId;
   entry.actorName = actor?.name ?? entry.actorName ?? "";
+  const targetContainer = actor ? getActorContainer(actor, requestedContainerId) : null;
+  entry.containerId = targetContainer?.id ?? "";
+  entry.containerName = targetContainer?.name ?? "";
   entry.resolutionStartedAt = timestamp;
   entry.resolutionStartedAtMs = Date.now();
   entry.updatedAt = timestamp;
@@ -82,6 +95,9 @@ export function claimSearchResolution({
     entry,
     request: {
       actorId,
+      requestedContainerId,
+      containerId: targetContainer?.id ?? "",
+      containerName: targetContainer?.name ?? "",
       extraModifier,
       rollMode,
       sessionId,

@@ -1,6 +1,7 @@
 import { getDefaultActorId, getAvailableActors } from "../helpers/actor-utils.js";
 import { MODULE_ID } from "../constants.js";
 import { getActivitySkillLabel, getActorSkillModifier } from "../helpers/dnd5e-support.js";
+import { getActorContainers } from "../helpers/inventory-container-core.js";
 import { getRewardDisplayName } from "../helpers/reward-utils.js";
 import { addRewardsToActor, appendSearchLog } from "../helpers/resource-store.js";
 import { executeSearch } from "../helpers/search-engine.js";
@@ -75,7 +76,20 @@ function renderActorOptions(actors, selectedActorId) {
   return `${blankOption}${actorOptions}`;
 }
 
-function renderActorSection(actors, selectedActorId) {
+function renderContainerOptions(actor, selectedContainerId = "") {
+  const containers = getActorContainers(actor);
+  const rootSelected = containers.some((container) => container.id === selectedContainerId) ? "" : " selected";
+  const containerOptions = containers.map((container) => {
+    const selected = container.id === selectedContainerId ? " selected" : "";
+    return `<option value="${escapeHtml(container.id)}"${selected}>${escapeHtml(container.name)}</option>`;
+  }).join("");
+
+  return `<option value=""${rootSelected}>${escapeHtml(t("WILDHARVEST.Dialog.Search.MainInventory"))}</option>${containerOptions}`;
+}
+
+function renderActorSection(actors, selectedActorId, selectedContainerId = "") {
+  const selectedActor = actors.find((actor) => actor.id === selectedActorId) ?? null;
+  const hasContainers = getActorContainers(selectedActor).length > 0;
   return `
     <section class="wildharvest-player-card">
       ${renderPlayerSectionTitle({
@@ -88,6 +102,13 @@ function renderActorSection(actors, selectedActorId) {
         <select name="actorId">
           ${renderActorOptions(actors, selectedActorId)}
         </select>
+      </div>
+      <div class="form-group wildharvest-form-group--tight" data-loot-destination${hasContainers ? "" : " hidden"}>
+        <label>${escapeHtml(t("WILDHARVEST.Dialog.Search.LootDestination"))}</label>
+        <select name="containerId">
+          ${renderContainerOptions(selectedActor, selectedContainerId)}
+        </select>
+        <p class="notes">${escapeHtml(t("WILDHARVEST.Dialog.Search.LootDestinationHint"))}</p>
       </div>
     </section>
   `;
@@ -239,6 +260,7 @@ function buildResultStorageState(actor, storageSummary, rewardCount) {
   const fallbackCount = Array.isArray(storageSummary?.fallback)
     ? storageSummary.fallback.length
     : Number(storageSummary?.fallbackCount ?? 0);
+  const containerName = String(storageSummary?.containerName ?? "").trim();
 
   if (!actor) {
     return {
@@ -258,7 +280,9 @@ function buildResultStorageState(actor, storageSummary, rewardCount) {
 
   if (inventoryCount && !fallbackCount) {
     return {
-      message: t("WILDHARVEST.Dialog.Result.InventoryAll"),
+      message: containerName
+        ? t("WILDHARVEST.Dialog.Result.InventoryAllContainer", { containerName })
+        : t("WILDHARVEST.Dialog.Result.InventoryAll"),
       className: "is-success",
       iconPath: PLAYER_UI_ASSETS.completed
     };
@@ -266,7 +290,9 @@ function buildResultStorageState(actor, storageSummary, rewardCount) {
 
   if (inventoryCount && fallbackCount) {
     return {
-      message: t("WILDHARVEST.Dialog.Result.InventoryPartial"),
+      message: containerName
+        ? t("WILDHARVEST.Dialog.Result.InventoryPartialContainer", { containerName })
+        : t("WILDHARVEST.Dialog.Result.InventoryPartial"),
       className: "is-partial",
       iconPath: PLAYER_UI_ASSETS.completed
     };
@@ -385,6 +411,7 @@ export async function resolveSearchAsGm({
   skillName,
   skillModifier,
   rollMode,
+  containerId = "",
   resolutionId = ""
 }) {
   if (!game.user?.isGM) {
@@ -399,11 +426,13 @@ export async function resolveSearchAsGm({
   });
   let storageSummary = {
     inventory: [],
-    fallback: []
+    fallback: [],
+    containerId: "",
+    containerName: ""
   };
 
   if (actor && result.rewards.length) {
-    storageSummary = await addRewardsToActor(actor, result.rewards);
+    storageSummary = await addRewardsToActor(actor, result.rewards, { containerId });
   }
 
   if (actor) {
@@ -420,7 +449,9 @@ export async function resolveSearchAsGm({
         rewards: result.rewards,
         storageState: {
           inventoryCount: storageSummary.inventory.length,
-          fallbackCount: storageSummary.fallback.length
+          fallbackCount: storageSummary.fallback.length,
+          containerId: storageSummary.containerId ?? "",
+          containerName: storageSummary.containerName ?? ""
         },
         timestamp: new Date().toLocaleString(getModuleLocaleTag())
       });
@@ -462,6 +493,7 @@ async function handleSubmit(form, locations, {
   if (typeof onSubmitRequest === "function") {
     await onSubmitRequest({
       actorId: String(formData.actorId ?? "").trim(),
+      containerId: String(formData.containerId ?? "").trim(),
       extraModifier,
       rollMode,
       dialogPosition
@@ -493,7 +525,8 @@ async function handleSubmit(form, locations, {
     activity: effectiveActivity,
     skillName: String(formData.skillName ?? ""),
     skillModifier: finalSkillModifier,
-    rollMode
+    rollMode,
+    containerId: String(formData.containerId ?? "").trim()
   });
 }
 
@@ -538,10 +571,12 @@ function attachListeners(dialog, locations) {
     const baseActivity = location.activities.find((entry) => entry.id === activityId) ?? location.activities[0];
     const activity = buildEffectiveActivity(location, baseActivity);
     syncSkillInputs(form, location, activity);
+    syncContainerDestination(form);
   });
   form.elements.locationId?.addEventListener("change", () => refreshActivityOptions(dialog, locations));
   form.elements.activityId?.addEventListener("change", () => refreshActivityOptions(dialog, locations));
   refreshActivityOptions(dialog, locations);
+  syncContainerDestination(form);
 }
 
 function getInitialSearchContext(locations, options = {}) {
@@ -646,6 +681,19 @@ function syncSkillInputs(form, location, activity) {
   }
 }
 
+function syncContainerDestination(form) {
+  const actorId = String(form.elements.actorId?.value ?? "");
+  const actor = actorId ? game.actors.get(actorId) : null;
+  const destinationGroup = form.querySelector("[data-loot-destination]");
+  const destinationSelect = form.elements.containerId;
+  if (!destinationGroup || !destinationSelect) return;
+
+  const selectedContainerId = String(destinationSelect.value ?? "");
+  const containers = getActorContainers(actor);
+  destinationSelect.innerHTML = renderContainerOptions(actor, selectedContainerId);
+  destinationGroup.hidden = !containers.length;
+}
+
 export function openSearchDialog(options = {}) {
   const locations = getLocations();
   if (!locations.length) {
@@ -659,6 +707,7 @@ export function openSearchDialog(options = {}) {
   const selectedActorId = options.actorId && actors.some((actor) => actor.id === options.actorId)
     ? options.actorId
     : getDefaultActorId(actors);
+  const selectedContainerId = String(options.containerId ?? "").trim();
   const { location: initialLocation, activity: initialActivity } = getInitialSearchContext(locations, options);
   const lockContext = Boolean(options.lockContext);
   const title = options.title ?? t("WILDHARVEST.Dialog.Search.Title");
@@ -689,7 +738,7 @@ export function openSearchDialog(options = {}) {
           icon: "fa-solid fa-compass",
           imagePath: PLAYER_UI_ASSETS.roll
         })}
-        ${renderActorSection(actors, selectedActorId)}
+        ${renderActorSection(actors, selectedActorId, selectedContainerId)}
         ${renderContextSection({
           locations,
           location: initialLocation,
@@ -762,8 +811,12 @@ export function openSearchDialog(options = {}) {
 
     const form = getDialogForm(dialog);
     if (!form) return;
-    form.elements.actorId?.addEventListener("change", () => syncSkillInputs(form, initialLocation, initialActivity));
+    form.elements.actorId?.addEventListener("change", () => {
+      syncSkillInputs(form, initialLocation, initialActivity);
+      syncContainerDestination(form);
+    });
     syncSkillInputs(form, initialLocation, initialActivity);
+    syncContainerDestination(form);
   }, { once: true });
   dialog.render({ force: true });
 }

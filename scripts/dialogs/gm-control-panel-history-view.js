@@ -45,6 +45,7 @@ export function getFilteredHistoryEntries(actor, historyFilter = "") {
         entry.activityName,
         entry.locationName,
         entry.skillName,
+        entry.storageState?.containerName,
         rewards
       ].join(" ").toLowerCase();
 
@@ -147,6 +148,9 @@ function renderHistoryEntryDetails(entry) {
         <div><dt>${escapeHtml(t("WILDHARVEST.Table.Skill"))}</dt><dd>${escapeHtml(entry.skillName || t("WILDHARVEST.History.None"))}</dd></div>
         <div><dt>${escapeHtml(t("WILDHARVEST.Dialog.Result.FinalResult"))}</dt><dd>${escapeHtml(String(entry.rollTotal ?? 0))}</dd></div>
         <div><dt>${escapeHtml(t("WILDHARVEST.Dialog.Result.LootPoints"))}</dt><dd>${escapeHtml(String(lootPoints))}</dd></div>
+        <div><dt>${escapeHtml(t("WILDHARVEST.Dialog.Search.LootDestination"))}</dt><dd>${escapeHtml(
+          entry.storageState?.containerName || t("WILDHARVEST.Dialog.Search.MainInventory")
+        )}</dd></div>
         <div><dt>${escapeHtml(t("WILDHARVEST.Dialog.Search.RollMode"))}</dt><dd>${escapeHtml(getHistoryRollModeLabel(entry))}</dd></div>
         <div><dt>${escapeHtml(t("WILDHARVEST.Dialog.ControlPanel.HistoryDate"))}</dt><dd>${escapeHtml(entry.timestamp || t("WILDHARVEST.History.None"))}</dd></div>
       </dl>

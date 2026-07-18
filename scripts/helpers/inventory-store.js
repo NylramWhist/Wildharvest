@@ -4,6 +4,11 @@ import {
   calculateGrantedQuantity,
   getInventoryDisplayQuantity
 } from "./inventory-quantity-core.js";
+import {
+  getActorContainer,
+  getItemContainerId,
+  normalizeContainerId
+} from "./inventory-container-core.js";
 
 const KNOWN_QUANTITY_PATHS = [
   "system.quantity",
@@ -14,6 +19,14 @@ const KNOWN_QUANTITY_PATHS = [
   "system.amount.value",
   "system.stack.value"
 ];
+const DND5E_CONTAINABLE_ITEM_TYPES = new Set([
+  "container",
+  "consumable",
+  "equipment",
+  "loot",
+  "tool",
+  "weapon"
+]);
 
 function getDefaultItemImage() {
   return CONFIG.Item?.documentClass?.DEFAULT_ICON ?? "icons/svg/item-bag.svg";
@@ -66,11 +79,12 @@ function setValueAtPath(target, path, value) {
   return target;
 }
 
-function buildModuleFlags(reward, rewardKey, quantityPath, sourceItem) {
+function buildModuleFlags(reward, rewardKey, quantityPath, sourceItem, containerId = "") {
   return {
     rewardId: reward.id,
     rewardKey,
     quantityPath,
+    containerId: normalizeContainerId(containerId) || null,
     sourceUuid: reward.uuid ?? sourceItem?.uuid ?? null,
     sourcePack: reward.pack ?? sourceItem?.compendium?.collection ?? null,
     sourceDocumentId: reward.documentId ?? sourceItem?.id ?? null
@@ -109,18 +123,23 @@ async function resolveSourceItem(reward) {
   return null;
 }
 
-function findExistingActorItem(actor, reward, rewardKey, sourceItem) {
+function findExistingActorItem(actor, reward, rewardKey, sourceItem, containerId = "") {
   const rewardId = reward.id;
   const sourceUuid = reward.uuid ?? sourceItem?.uuid ?? null;
   const expectedType = sourceItem?.type ?? getDefaultItemType(reward.itemType);
+  const normalizedContainerId = normalizeContainerId(containerId);
+  const matchesContainer = (item) => getItemContainerId(item) === normalizedContainerId;
 
-  return actor.items.find((item) => item.getFlag(MODULE_ID, "rewardKey") === rewardKey)
-    ?? actor.items.find((item) => sourceUuid && item.getFlag(MODULE_ID, "sourceUuid") === sourceUuid)
-    ?? actor.items.find((item) => item.getFlag(MODULE_ID, "rewardId") === rewardId)
-    ?? actor.items.find((item) => item.name === reward.name && item.type === expectedType);
+  return actor.items.find((item) => matchesContainer(item) && item.getFlag(MODULE_ID, "rewardKey") === rewardKey)
+    ?? actor.items.find((item) => matchesContainer(item)
+      && sourceUuid && item.getFlag(MODULE_ID, "sourceUuid") === sourceUuid)
+    ?? actor.items.find((item) => matchesContainer(item) && item.getFlag(MODULE_ID, "rewardId") === rewardId)
+    ?? actor.items.find((item) => matchesContainer(item)
+      && item.name === reward.name && item.type === expectedType);
 }
 
-async function updateExistingItem(item, reward, rewardKey, sourceItem) {
+async function updateExistingItem(item, reward, rewardKey, sourceItem, targetContainer = null) {
+  const containerId = normalizeContainerId(targetContainer?.id);
   const preferredPath = reward.quantityPath ?? item.getFlag(MODULE_ID, "quantityPath") ?? null;
   const quantityPath = getQuantityPath(item, preferredPath);
   if (!quantityPath) {
@@ -132,7 +151,7 @@ async function updateExistingItem(item, reward, rewardKey, sourceItem) {
   const updateData = {
     _id: item.id,
     flags: {
-      [MODULE_ID]: buildModuleFlags(reward, rewardKey, quantityPath, sourceItem)
+      [MODULE_ID]: buildModuleFlags(reward, rewardKey, quantityPath, sourceItem, containerId)
     }
   };
 
@@ -144,11 +163,13 @@ async function updateExistingItem(item, reward, rewardKey, sourceItem) {
     item,
     reward,
     quantity: reward.quantity,
-    quantityPath
+    quantityPath,
+    containerId,
+    containerName: targetContainer?.name ?? ""
   };
 }
 
-async function createNewItem(actor, reward, rewardKey, sourceItem) {
+async function createNewItem(actor, reward, rewardKey, sourceItem, targetContainer = null) {
   const itemData = sourceItem ? sourceItem.toObject() : {};
   delete itemData._id;
   delete itemData.folder;
@@ -157,35 +178,52 @@ async function createNewItem(actor, reward, rewardKey, sourceItem) {
   itemData.name = reward.name || itemData.name;
   itemData.type = sourceItem?.type ?? getDefaultItemType(reward.itemType);
   itemData.img = reward.img ?? itemData.img ?? getDefaultItemImage();
+  const containerId = normalizeContainerId(targetContainer?.id);
+  const supportsContainer = foundry.utils.hasProperty(itemData, "system.container")
+    || (game.system?.id === "dnd5e" && DND5E_CONTAINABLE_ITEM_TYPES.has(itemData.type));
+
+  if (supportsContainer) {
+    setValueAtPath(itemData, "system.container", containerId || null);
+  }
 
   const quantityPath = getQuantityPath(itemData, reward.quantityPath ?? null);
   itemData.flags = {
     ...(itemData.flags ?? {}),
-    [MODULE_ID]: buildModuleFlags(reward, rewardKey, quantityPath, sourceItem)
+    [MODULE_ID]: buildModuleFlags(reward, rewardKey, quantityPath, sourceItem, containerId)
   };
 
   if (quantityPath) setValueAtPath(itemData, quantityPath, reward.quantity);
 
   const [item] = await actor.createEmbeddedDocuments("Item", [itemData]);
   const resolvedQuantityPath = getQuantityPath(item, reward.quantityPath ?? quantityPath);
+  const resolvedContainerId = getItemContainerId(item);
 
   if (!resolvedQuantityPath && reward.quantity !== 1) {
     await item.delete();
     throw new Error(t("WILDHARVEST.Errors.QuantityPathMissing", { name: reward.name }));
   }
 
-  if (resolvedQuantityPath) {
-    const currentQuantity = getNumericAtPath(item, resolvedQuantityPath);
-    if (currentQuantity !== reward.quantity || resolvedQuantityPath !== quantityPath) {
-      const updateData = {
-        _id: item.id,
-        flags: {
-          [MODULE_ID]: buildModuleFlags(reward, rewardKey, resolvedQuantityPath, sourceItem)
-        }
-      };
+  const currentQuantity = getNumericAtPath(item, resolvedQuantityPath);
+  const requiresMetadataUpdate = resolvedContainerId !== containerId;
+  const requiresQuantityUpdate = resolvedQuantityPath
+    && (currentQuantity !== reward.quantity || resolvedQuantityPath !== quantityPath);
+  if (requiresMetadataUpdate || requiresQuantityUpdate) {
+    const updateData = {
+      _id: item.id,
+      flags: {
+        [MODULE_ID]: buildModuleFlags(
+          reward,
+          rewardKey,
+          resolvedQuantityPath,
+          sourceItem,
+          resolvedContainerId
+        )
+      }
+    };
+    if (resolvedQuantityPath) {
       setValueAtPath(updateData, resolvedQuantityPath, reward.quantity);
-      await item.update(updateData);
     }
+    await item.update(updateData);
   }
 
   return {
@@ -193,7 +231,9 @@ async function createNewItem(actor, reward, rewardKey, sourceItem) {
     item,
     reward,
     quantity: reward.quantity,
-    quantityPath: resolvedQuantityPath ?? quantityPath
+    quantityPath: resolvedQuantityPath ?? quantityPath,
+    containerId: resolvedContainerId,
+    containerName: resolvedContainerId === containerId ? (targetContainer?.name ?? "") : ""
   };
 }
 
@@ -220,24 +260,42 @@ export function getManagedInventoryResources(actor) {
     .sort((left, right) => left.name.localeCompare(right.name, "pl"));
 }
 
-export async function grantRewardsToActorInventory(actor, rewards) {
+export async function grantRewardsToActorInventory(actor, rewards, { containerId = "" } = {}) {
+  const requestedContainerId = normalizeContainerId(containerId);
+  const targetContainer = getActorContainer(actor, requestedContainerId);
   const summary = {
     inventory: [],
-    failed: []
+    failed: [],
+    requestedContainerId,
+    containerId: targetContainer?.id ?? "",
+    containerName: targetContainer?.name ?? "",
+    containerFallback: Boolean(requestedContainerId && !targetContainer)
   };
 
   for (const reward of rewards) {
     try {
       const rewardKey = getRewardKey(reward);
       const sourceItem = await resolveSourceItem(reward);
-      const existingItem = findExistingActorItem(actor, reward, rewardKey, sourceItem);
+      const existingItem = findExistingActorItem(
+        actor,
+        reward,
+        rewardKey,
+        sourceItem,
+        targetContainer?.id ?? ""
+      );
 
       if (existingItem) {
-        summary.inventory.push(await updateExistingItem(existingItem, reward, rewardKey, sourceItem));
+        summary.inventory.push(await updateExistingItem(
+          existingItem,
+          reward,
+          rewardKey,
+          sourceItem,
+          targetContainer
+        ));
         continue;
       }
 
-      summary.inventory.push(await createNewItem(actor, reward, rewardKey, sourceItem));
+      summary.inventory.push(await createNewItem(actor, reward, rewardKey, sourceItem, targetContainer));
     } catch (error) {
       console.warn(`${MODULE_ID} | Failed to add reward ${reward.name} to inventory.`, error);
       summary.failed.push({

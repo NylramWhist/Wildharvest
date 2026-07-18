@@ -797,6 +797,8 @@ function buildPersistedResolutionResult(summary) {
     skillName: summary.result.skillName,
     lootPoints: Number(summary.result.lootSummary?.lootPoints ?? 0),
     lootStrategy: summary.result.lootSummary?.strategy ?? "rarity",
+    containerId: summary.storageSummary?.containerId ?? "",
+    containerName: summary.storageSummary?.containerName ?? "",
     selectionGroups: summary.result.lootSummary?.selectionGroups ?? [],
     rarityGroups: summary.result.lootSummary?.rarityGroups ?? [],
     rewards: summary.result.rewards.map((reward) => ({
@@ -882,6 +884,7 @@ function handlePlayerResolutionRequest(message) {
       skillName,
       skillModifier: baseSkillModifier + claim.request.extraModifier,
       rollMode: claim.request.rollMode,
+      containerId: claim.request.containerId,
       resolutionId: message.sessionId
     });
   }).then(async (summary) => {
@@ -1101,7 +1104,7 @@ function openPlayerOfferDialog(offer) {
             throw new Error(t("WILDHARVEST.Errors.SceneClosed"));
           }
         },
-        onSubmitRequest: async ({ actorId, extraModifier, rollMode, dialogPosition }) => {
+        onSubmitRequest: async ({ actorId, containerId, extraModifier, rollMode, dialogPosition }) => {
           const activeGmId = getCurrentActiveGmId();
           if (!activeGmId) {
             throw new Error(t("WILDHARVEST.Notifications.NoActiveGm"));
@@ -1118,6 +1121,7 @@ function openPlayerOfferDialog(offer) {
               sessionId: offer.sessionId,
               gmUserId: activeGmId,
               actorId,
+              containerId,
               extraModifier,
               rollMode
             });

@@ -15,14 +15,22 @@ export function getActorResourceList(actor) {
   return [...inventoryResources, ...fallbackResources].sort((left, right) => left.name.localeCompare(right.name, "pl"));
 }
 
-export async function addRewardsToActor(actor, rewards) {
+export async function addRewardsToActor(actor, rewards, { containerId = "" } = {}) {
   const summary = {
     inventory: [],
-    fallback: []
+    fallback: [],
+    requestedContainerId: "",
+    containerId: "",
+    containerName: "",
+    containerFallback: false
   };
-  const inventorySummary = await grantRewardsToActorInventory(actor, rewards);
+  const inventorySummary = await grantRewardsToActorInventory(actor, rewards, { containerId });
 
   summary.inventory = inventorySummary.inventory;
+  summary.requestedContainerId = inventorySummary.requestedContainerId;
+  summary.containerId = inventorySummary.containerId;
+  summary.containerName = inventorySummary.containerName;
+  summary.containerFallback = inventorySummary.containerFallback;
 
   if (summary.inventory.length) {
     const resources = getActorResources(actor);
