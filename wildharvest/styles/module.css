@@ -1,0 +1,178 @@
+/* Shared Wildharvest dialog and form primitives. */
+
+.wildharvest-dialog {
+  display: grid;
+  gap: 0.75rem;
+  max-height: calc(100vh - 14rem);
+  overflow-y: auto;
+  overflow-x: hidden;
+  align-content: start;
+  padding-right: 0.25rem;
+}
+
+.wildharvest-dialog--wide {
+  min-width: min(70vw, 900px);
+}
+
+.wildharvest-inline-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.wildharvest-inline-actions--end {
+  justify-content: flex-end;
+}
+
+.wildharvest-code {
+  width: 100%;
+  min-height: 26rem;
+  font-family: "Cascadia Code", "Fira Code", monospace;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.wildharvest-code--snippet {
+  min-height: 0;
+  margin: 0;
+  padding: 0.75rem;
+  white-space: pre-wrap;
+}
+
+.wildharvest-preview {
+  border: 1px solid var(--color-border-light-2);
+  border-radius: 8px;
+  padding: 0.75rem;
+  background: color-mix(in srgb, var(--color-cool-5) 24%, transparent);
+}
+
+.wildharvest-preview__block + .wildharvest-preview__block {
+  margin-top: 0.75rem;
+}
+
+.wildharvest-card-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.wildharvest-card-grid--compact {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.6rem;
+}
+
+.wildharvest-card {
+  border: 1px solid var(--color-border-light-2);
+  border-radius: 8px;
+  padding: 0.75rem;
+  background: color-mix(in srgb, var(--color-cool-5) 16%, transparent);
+}
+
+.wildharvest-card--compact {
+  padding: 0.6rem 0.7rem;
+  display: grid;
+  gap: 0.35rem;
+  align-content: start;
+  min-height: 0;
+}
+
+.wildharvest-card__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.wildharvest-card__meta {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
+.wildharvest-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.wildharvest-card--compact .wildharvest-tag-list {
+  margin-top: 0.1rem;
+}
+
+.wildharvest-tag {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--color-border-light-2);
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  background: color-mix(in srgb, var(--color-cool-5) 28%, transparent);
+  font-size: 0.8rem;
+}
+
+.wildharvest-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.wildharvest-table th,
+.wildharvest-table td {
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid var(--color-border-light-2);
+}
+
+.wildharvest-table__value {
+  text-align: right;
+  width: 6rem;
+}
+
+.wildharvest-table__control {
+  width: 4rem;
+  text-align: center;
+}
+
+.wildharvest-table__actions {
+  width: 14rem;
+}
+
+.wildharvest-empty,
+.wildharvest-muted {
+  color: var(--color-text-secondary);
+}
+
+.wildharvest-validation-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.wildharvest-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.wildharvest-section-header__copy {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.wildharvest-section-header__copy .hint,
+.wildharvest-summary-row .hint {
+  margin: 0;
+}
+
+.wildharvest-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.wildharvest-form-check label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}

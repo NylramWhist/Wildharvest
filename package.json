@@ -1,0 +1,13 @@
+{
+  "name": "wildharvest-foundry-module",
+  "version": "1.14.0",
+  "private": true,
+  "type": "module",
+  "description": "Local development and release commands for the Wildharvest Foundry VTT module.",
+  "scripts": {
+    "format:check": "powershell -NoProfile -ExecutionPolicy Bypass -File ./tools/check-format.ps1",
+    "validate": "powershell -NoProfile -ExecutionPolicy Bypass -File ./tools/validate-module.ps1",
+    "test": "powershell -NoProfile -ExecutionPolicy Bypass -File ./tools/test-module.ps1",
+    "release": "powershell -NoProfile -ExecutionPolicy Bypass -File ./tools/build-release.ps1"
+  }
+}
