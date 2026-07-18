@@ -1,0 +1,216 @@
+/* Wildharvest Workbench responsive and reduced-motion rules. */
+
+@media (max-width: 1180px) {
+  .wildharvest-gm-main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .wildharvest-gm-live-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .wildharvest-gm-live-summary .wildharvest-gm-live-filters {
+    grid-column: auto;
+  }
+
+  .wildharvest-gm-history-workbench {
+    grid-template-columns: 190px minmax(0, 1fr);
+  }
+
+  .wildharvest-gm-history-pane--details {
+    grid-column: 1 / -1;
+    min-height: 0;
+    height: auto;
+  }
+
+  .wildharvest-gm-history-detail__stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .wildharvest-gm-panel__title h2 {
+    font-size: 1.45rem;
+  }
+
+  .wildharvest-gm-tab {
+    padding-inline: 0.45rem;
+    font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .wildharvest-gm-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wildharvest-gm-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wildharvest-gm-stat {
+    border-bottom: 1px solid var(--wildharvest-gm-border-dark);
+  }
+
+  .wildharvest-gm-active-scene,
+  .wildharvest-gm-active-scene--empty {
+    grid-template-columns: 38px minmax(0, 1fr);
+  }
+
+  .wildharvest-gm-active-scene__aside {
+    grid-column: 2;
+    justify-items: start;
+    margin-left: 0;
+  }
+
+  .wildharvest-gm-preset-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .wildharvest-gm-preset-toolbar .wildharvest-gm-live-filters {
+    justify-content: flex-start;
+  }
+
+  .wildharvest-gm-preset-table {
+    overflow: visible;
+    border: 0;
+    background: transparent;
+  }
+
+  .wildharvest-gm-preset-table__header {
+    display: none;
+  }
+
+  .wildharvest-gm-preset-table__body {
+    gap: 0.5rem;
+  }
+
+  .wildharvest-gm-preset-row {
+    grid-template-columns: 1fr;
+    min-width: 0;
+    padding: 0.3rem;
+    border: 1px solid var(--wildharvest-gm-border-dark);
+    border-radius: 3px;
+  }
+
+  .wildharvest-gm-preset-cell {
+    display: grid;
+    grid-template-columns: minmax(100px, 0.38fr) minmax(0, 1fr);
+    gap: 0.5rem;
+    padding: 0.42rem 0.5rem;
+    border-right: 0;
+    border-bottom: 1px solid var(--wildharvest-gm-border-dark);
+  }
+
+  .wildharvest-gm-preset-cell::before {
+    content: attr(data-label);
+    color: var(--wildharvest-gm-text-dim);
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .wildharvest-gm-preset-cell--identity {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+
+  .wildharvest-gm-preset-cell--identity::before {
+    display: none;
+  }
+
+  .wildharvest-gm-preset-cell--skill > span {
+    display: none;
+  }
+
+  .wildharvest-gm-preset-cell--actions {
+    display: flex;
+    justify-content: flex-end;
+    border-bottom: 0;
+  }
+
+  .wildharvest-gm-preset-cell--actions::before {
+    margin-right: auto;
+  }
+
+  .wildharvest-gm-history-workbench {
+    grid-template-columns: 1fr;
+  }
+
+  .wildharvest-gm-history-pane {
+    min-height: 0;
+    height: auto;
+  }
+
+  .wildharvest-gm-history-pane--details {
+    grid-column: auto;
+  }
+
+  .wildharvest-gm-history-actors {
+    max-height: 13rem;
+  }
+
+  .wildharvest-gm-history-table__header {
+    display: none;
+  }
+
+  .wildharvest-window--gm .wildharvest-gm-history-entry {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-width: 0;
+    padding: 0.3rem;
+    border: 1px solid var(--wildharvest-gm-border-dark);
+  }
+
+  .wildharvest-gm-history-entry > span,
+  .wildharvest-gm-history-entry > strong {
+    display: grid;
+    grid-template-columns: minmax(80px, 0.45fr) minmax(0, 1fr);
+    gap: 0.35rem;
+    border-right: 0;
+    border-bottom: 1px solid var(--wildharvest-gm-border-dark);
+    white-space: normal;
+  }
+
+  .wildharvest-gm-history-entry > span::before,
+  .wildharvest-gm-history-entry > strong::before {
+    content: attr(data-label);
+    color: var(--wildharvest-gm-text-dim);
+    font-size: 0.58rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .wildharvest-gm-history-entry__activity,
+  .wildharvest-gm-history-entry__date {
+    grid-column: 1 / -1;
+  }
+
+  .wildharvest-gm-history-detail__stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wildharvest-gm-panel__title p {
+    grid-column: 1 / -1;
+  }
+
+  .wildharvest-gm-footer__support {
+    justify-self: start;
+    margin-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wildharvest-window--gm *,
+  .wildharvest-window--gm *::before,
+  .wildharvest-window--gm *::after,
+  .wildharvest-window--player *,
+  .wildharvest-window--player *::before,
+  .wildharvest-window--player *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  .wildharvest-window--player .dialog-buttons button.default::after {
+    display: none !important;
+  }
+}

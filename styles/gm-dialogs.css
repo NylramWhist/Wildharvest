@@ -1,0 +1,1233 @@
+/* Shared GM DialogV2 layout; Workbench tab overrides load afterwards. */
+
+.wildharvest-window--gm {
+  --wildharvest-gm-bg-window: rgba(8, 7, 12, 0.96);
+  --wildharvest-gm-bg-panel: rgba(18, 15, 24, 0.88);
+  --wildharvest-gm-bg-panel-alt: rgba(26, 22, 34, 0.72);
+  --wildharvest-gm-bg-input: rgba(20, 17, 25, 0.96);
+  --wildharvest-gm-border: rgba(190, 150, 86, 0.38);
+  --wildharvest-gm-border-soft: rgba(190, 150, 86, 0.22);
+  --wildharvest-gm-border-bright: rgba(230, 178, 92, 0.75);
+  --wildharvest-gm-text: #efe4cf;
+  --wildharvest-gm-text-muted: #b8a98e;
+  --wildharvest-gm-text-dim: #8f826f;
+  --wildharvest-gm-accent: #d9aa55;
+  --wildharvest-gm-accent-bright: #f0c879;
+  --wildharvest-gm-accent-muted: #b86f42;
+  --wildharvest-gm-danger: #c76a53;
+  --wildharvest-gm-success: #91b96a;
+  --wildharvest-gm-warning: #d7a94d;
+  --wildharvest-gm-text-dim: #8f887e;
+  --wildharvest-gm-radius-sm: 6px;
+  --wildharvest-gm-radius-md: 10px;
+  --wildharvest-gm-radius-lg: 14px;
+  --wildharvest-gm-shadow-panel:
+    0 14px 40px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 220, 160, 0.04);
+  --wildharvest-gm-glow:
+    0 0 12px rgba(217, 170, 85, 0.18),
+    0 0 28px rgba(184, 111, 66, 0.12);
+}
+
+.wildharvest-window--gm .window-content {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(217, 170, 85, 0.08), transparent 32%),
+    radial-gradient(circle at 80% 18%, rgba(70, 120, 150, 0.06), transparent 34%),
+    linear-gradient(180deg, rgba(16, 13, 22, 0.96), rgba(7, 6, 10, 0.98));
+  color: var(--wildharvest-gm-text);
+  box-shadow: var(--wildharvest-gm-shadow-panel);
+  overflow: hidden;
+  min-height: 0;
+}
+
+.wildharvest-window--gm .dialog-content {
+  min-height: 0;
+  overflow: auto;
+  padding-right: 0.35rem;
+}
+
+.wildharvest-window--gm [data-gm-control-root] {
+  min-height: 0;
+  display: block;
+}
+
+.wildharvest-window--gm .dialog-content,
+.wildharvest-window--gm .window-content {
+  scrollbar-color: rgba(239, 183, 93, 0.5) rgba(255, 255, 255, 0.04);
+}
+
+.wildharvest-window--gm .window-header {
+  padding: 0.8rem 1rem 0.9rem;
+  border-bottom: 1px solid var(--wildharvest-gm-border-soft);
+  background:
+    linear-gradient(90deg, transparent, rgba(217, 170, 85, 0.08), transparent),
+    linear-gradient(180deg, rgba(255, 220, 160, 0.04), transparent);
+}
+
+.wildharvest-window--gm .window-title,
+.wildharvest-window--gm label,
+.wildharvest-window--gm h2,
+.wildharvest-window--gm h3,
+.wildharvest-window--gm strong {
+  color: var(--wildharvest-gm-text);
+}
+
+.wildharvest-window--gm .window-title {
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.8),
+    0 0 18px rgba(217, 170, 85, 0.16);
+}
+
+.wildharvest-window--gm .button,
+.wildharvest-window--gm button {
+  position: relative;
+  min-height: 2.35rem;
+  padding: 0.55rem 0.95rem;
+  border-radius: var(--wildharvest-gm-radius-sm);
+  border: 1px solid var(--wildharvest-gm-border-soft);
+  background:
+    linear-gradient(180deg, rgba(34, 28, 34, 0.95), rgba(14, 12, 18, 0.96));
+  color: var(--wildharvest-gm-text);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 230, 180, 0.05);
+  transition: 140ms ease;
+}
+
+.wildharvest-window--gm .button:hover,
+.wildharvest-window--gm button:hover {
+  color: var(--wildharvest-gm-accent-bright);
+  border-color: var(--wildharvest-gm-border);
+  transform: translateY(-1px);
+}
+
+.wildharvest-window--gm .button.default,
+.wildharvest-window--gm button.default,
+.wildharvest-window--gm [data-action="gm-send-launch"] {
+  color: #fff0c9;
+  border-color: var(--wildharvest-gm-border-bright);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 207, 112, 0.24), transparent 45%),
+    linear-gradient(180deg, rgba(92, 57, 24, 0.94), rgba(38, 25, 17, 0.96));
+  box-shadow:
+    0 0 16px rgba(217, 170, 85, 0.18),
+    inset 0 1px 0 rgba(255, 230, 180, 0.12);
+}
+
+.wildharvest-window--gm .button.default:hover,
+.wildharvest-window--gm button.default:hover,
+.wildharvest-window--gm [data-action="gm-send-launch"]:hover {
+  box-shadow:
+    0 0 22px rgba(217, 170, 85, 0.28),
+    inset 0 1px 0 rgba(255, 230, 180, 0.18);
+}
+
+.wildharvest-window--gm [data-action="gm-send-launch"] {
+  width: 100%;
+  min-height: 3rem;
+  font-size: 1.05rem;
+  margin-top: 0.2rem;
+}
+
+.wildharvest-window--gm .dialog-buttons {
+  display: none;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  flex: 0 0 auto;
+  padding-top: 0.2rem;
+  margin-top: 0.2rem;
+  border-top: 1px solid rgba(190, 150, 86, 0.16);
+  background: linear-gradient(180deg, rgba(12, 11, 18, 0.18), rgba(10, 9, 14, 0.4));
+}
+
+.wildharvest-window--gm .dialog-buttons:empty {
+  display: none;
+}
+
+.wildharvest-window--gm .dialog-buttons button {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 10rem;
+}
+
+.wildharvest-window--gm [data-action="close"] {
+  opacity: 0.74;
+  color: var(--wildharvest-gm-text-muted);
+  border-color: rgba(190, 150, 86, 0.18);
+  background: linear-gradient(180deg, rgba(22, 19, 28, 0.86), rgba(11, 10, 15, 0.92));
+}
+
+.wildharvest-window--gm [data-action="close"]:hover {
+  opacity: 1;
+  border-color: rgba(190, 150, 86, 0.32);
+}
+
+.wildharvest-window--gm input,
+.wildharvest-window--gm textarea,
+.wildharvest-window--gm select {
+  color: var(--wildharvest-gm-text);
+  background:
+    linear-gradient(180deg, rgba(18, 15, 23, 0.96), rgba(10, 9, 14, 0.96));
+  border: 1px solid var(--wildharvest-gm-border-soft);
+  border-radius: var(--wildharvest-gm-radius-sm);
+  box-shadow:
+    inset 0 1px 4px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 230, 180, 0.03);
+}
+
+.wildharvest-window--gm input:hover,
+.wildharvest-window--gm textarea:hover,
+.wildharvest-window--gm select:hover {
+  border-color: rgba(214, 166, 82, 0.42);
+}
+
+.wildharvest-window--gm input:focus,
+.wildharvest-window--gm textarea:focus,
+.wildharvest-window--gm select:focus {
+  outline: none;
+  border-color: var(--wildharvest-gm-border-bright);
+  box-shadow:
+    0 0 0 1px rgba(217, 170, 85, 0.18),
+    0 0 14px rgba(217, 170, 85, 0.14),
+    inset 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+.wildharvest-window--gm .wildharvest-tag {
+  border-color: var(--wildharvest-gm-border-soft);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--wildharvest-gm-text);
+}
+
+.wildharvest-gm-panel {
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 1.15rem;
+  height: 100%;
+  max-height: none;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 0.35rem;
+  scrollbar-gutter: stable;
+}
+
+.wildharvest-gm-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 0.75rem;
+}
+
+.wildharvest-gm-panel__title {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.wildharvest-gm-panel__title h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.95rem;
+  margin: 0;
+  font-size: 2.3rem;
+  line-height: 1.05;
+  letter-spacing: 0.03em;
+}
+
+.wildharvest-gm-panel__title h2::after {
+  content: "";
+  display: block;
+  width: 7rem;
+  height: 1px;
+  margin-top: 0.5rem;
+  background: linear-gradient(90deg, var(--wildharvest-gm-accent), transparent);
+  opacity: 0.65;
+}
+
+.wildharvest-gm-panel__title p {
+  margin: 0;
+  color: var(--wildharvest-gm-text-muted);
+  font-size: 0.83rem;
+}
+
+.wildharvest-gm-panel__title-asset {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 0 10px rgba(217, 170, 85, 0.35));
+}
+
+.wildharvest-gm-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.wildharvest-gm-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 3.15rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--wildharvest-gm-radius-sm);
+  border: 1px solid var(--wildharvest-gm-border-soft);
+  background: rgba(20, 17, 25, 0.74);
+  color: var(--wildharvest-gm-text);
+  font-size: 1rem;
+  font-weight: 700;
+  transition: 140ms ease;
+}
+
+.wildharvest-gm-tab__asset {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  display: block;
+  object-fit: contain;
+}
+
+.wildharvest-gm-tab:hover {
+  transform: translateY(-1px);
+  border-color: var(--wildharvest-gm-border);
+  background: rgba(32, 27, 38, 0.82);
+  color: var(--wildharvest-gm-accent-bright);
+  box-shadow: 0 0 12px rgba(214, 166, 82, 0.08);
+}
+
+.wildharvest-gm-tab.is-active {
+  color: var(--wildharvest-gm-accent-bright);
+  border-color: var(--wildharvest-gm-border-bright);
+  background:
+    linear-gradient(180deg, rgba(217, 170, 85, 0.16), rgba(20, 17, 25, 0.86));
+  box-shadow: var(--wildharvest-gm-glow);
+}
+
+.wildharvest-gm-tab.is-active::after {
+  content: "";
+  position: absolute;
+  left: 1.15rem;
+  right: 1.15rem;
+  bottom: -1px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--wildharvest-gm-accent), transparent);
+}
+
+.wildharvest-gm-panel__body {
+  display: grid;
+  gap: 1rem;
+  min-height: 0;
+}
+
+.wildharvest-gm-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.wildharvest-gm-main-grid {
+  display: grid;
+  grid-template-columns: minmax(420px, 0.92fr) minmax(520px, 1.08fr);
+  gap: 1rem;
+  align-items: start;
+  min-height: 100%;
+}
+
+.wildharvest-gm-grid--launch {
+  grid-template-columns: 1fr;
+}
+
+.wildharvest-gm-grid--launch-secondary {
+  grid-template-columns: minmax(380px, 1.35fr) minmax(260px, 0.65fr);
+}
+
+.wildharvest-gm-grid--responses {
+  grid-template-columns: minmax(360px, 1.2fr) minmax(250px, 0.8fr);
+}
+
+.wildharvest-gm-card {
+  display: grid;
+  gap: 1rem;
+  padding: 1.15rem;
+  border-radius: var(--wildharvest-gm-radius-md);
+  border: 1px solid var(--wildharvest-gm-border-soft);
+  background:
+    radial-gradient(circle at top left, rgba(217, 170, 85, 0.06), transparent 34%),
+    linear-gradient(180deg, rgba(24, 20, 31, 0.88), rgba(11, 10, 16, 0.9));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 230, 180, 0.04),
+    0 8px 22px rgba(0, 0, 0, 0.26);
+}
+
+.wildharvest-gm-card--primary,
+.wildharvest-gm-session-detail {
+  border-color: var(--wildharvest-gm-border);
+  box-shadow:
+    0 0 22px rgba(217, 170, 85, 0.08),
+    inset 0 1px 0 rgba(255, 230, 180, 0.05);
+}
+
+.wildharvest-gm-card--secondary {
+  border-color: rgba(214, 166, 82, 0.24);
+  opacity: 0.96;
+}
+
+.wildharvest-gm-panel--has-live-session .wildharvest-gm-launch-card {
+  opacity: 0.92;
+}
+
+.wildharvest-gm-panel--has-live-session .wildharvest-gm-live-card {
+  border-color: rgba(217, 170, 85, 0.42);
+  box-shadow:
+    0 0 18px rgba(217, 170, 85, 0.08),
+    inset 0 1px 0 rgba(255, 230, 180, 0.06);
+}
+
+.wildharvest-gm-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.wildharvest-gm-card__header h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  line-height: 1.1;
+}
+
+.wildharvest-gm-card__header p,
+.wildharvest-gm-readonly,
+.wildharvest-gm-response-entry__meta {
+  margin: 0;
+  color: var(--wildharvest-gm-text-muted);
+  font-size: 0.84rem;
+}
+
+.wildharvest-window--gm label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #c8b894;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.wildharvest-gm-label__asset,
+.wildharvest-gm-button__asset,
+.wildharvest-gm-status__asset,
+.wildharvest-gm-empty-state-card__asset {
+  flex: 0 0 auto;
+  display: block;
+  object-fit: contain;
+}
+
+.wildharvest-gm-label__asset {
+  width: 15px;
+  height: 15px;
+}
+
+.wildharvest-window--gm .button,
+.wildharvest-window--gm button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.wildharvest-gm-button__asset {
+  width: 15px;
+  height: 15px;
+}
+
+.wildharvest-window--gm [data-action="gm-send-launch"] .wildharvest-gm-button__asset {
+  width: 18px;
+  height: 18px;
+}
+
+.wildharvest-gm-form {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.wildharvest-gm-launch-card {
+  align-content: start;
+  height: 100%;
+}
+
+.wildharvest-gm-launch-form-shell {
+  width: 100%;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.wildharvest-gm-form--launch {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 0.9rem;
+}
+
+.wildharvest-gm-form--launch .form-group {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.35rem;
+  align-content: start;
+}
+
+.wildharvest-gm-form-group--full {
+  grid-column: 1 / -1;
+}
+
+.wildharvest-gm-launch-actions {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.wildharvest-gm-validation {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border-radius: var(--wildharvest-gm-radius-sm);
+}
+
+.wildharvest-gm-validation p {
+  margin: 0 0 0.45rem;
+}
+
+.wildharvest-gm-validation--compact {
+  margin-top: 0.7rem;
+}
+
+.wildharvest-gm-launch-secondary-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.wildharvest-gm-launch-secondary-actions .button {
+  width: 100%;
+}
+
+.wildharvest-window--gm .button[disabled] {
+  opacity: 0.58;
+  cursor: not-allowed;
+  pointer-events: none;
+  box-shadow: none;
+  filter: grayscale(0.2);
+}
+
+.wildharvest-gm-readonly {
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 0.85rem;
+  border-radius: var(--wildharvest-gm-radius-sm);
+  border: 1px solid var(--wildharvest-gm-border-soft);
+  background: rgba(19, 18, 25, 0.66);
+}
+
+.wildharvest-gm-readonly--scroll {
+  align-items: start;
+  max-height: 4.15rem;
+  overflow: auto;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+  scrollbar-gutter: stable;
+}
+
+.wildharvest-gm-readonly--multiline {
+  align-items: start;
+  min-height: 6rem;
+  line-height: 1.5;
+}
+
+.wildharvest-gm-active-scene {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  gap: 0.9rem;
+  align-items: center;
+  padding: 0.95rem 1rem;
+  border-radius: var(--wildharvest-gm-radius-md);
+  border: 1px solid rgba(217, 170, 85, 0.22);
+  background:
+    radial-gradient(circle at 8% 50%, rgba(217, 170, 85, 0.08), transparent 34%),
+    rgba(8, 7, 12, 0.42);
+}
+
+.wildharvest-gm-active-scene--empty {
+  grid-template-columns: 52px minmax(0, 1fr);
+}
+
+.wildharvest-gm-active-scene__aside {
+  display: grid;
+  justify-items: end;
+  gap: 0.6rem;
+}
+
+.wildharvest-gm-active-scene__icon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(217, 170, 85, 0.24);
+  background: rgba(217, 170, 85, 0.08);
+  box-shadow: 0 0 16px rgba(217, 170, 85, 0.12);
+}
+
+.wildharvest-gm-active-scene__asset {
+  width: 24px;
+  height: 24px;
+}
+
+.wildharvest-gm-active-scene__content {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.wildharvest-gm-active-scene__content h4,
+.wildharvest-gm-active-scene__content p,
+.wildharvest-gm-active-scene__content strong {
+  margin: 0;
+}
+
+.wildharvest-gm-active-scene__content h4 {
+  font-size: 0.95rem;
+}
+
+.wildharvest-gm-active-scene__content strong {
+  color: var(--wildharvest-gm-text);
+  font-size: 1rem;
+}
+
+.wildharvest-gm-active-scene__content p {
+  color: var(--wildharvest-gm-text-muted);
+  font-size: 0.8rem;
+}
+
+.wildharvest-gm-session-actions {
+  flex-wrap: wrap;
+  row-gap: 0.45rem;
+}
+
+.wildharvest-gm-session-actions .button {
+  min-height: 2rem;
+}
+
+.wildharvest-gm-empty-state {
+  display: grid;
+  gap: 0.85rem;
+  place-items: start;
+  padding: 1rem 0.1rem;
+}
+
+.wildharvest-gm-empty-state-card {
+  min-height: 8rem;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 0.45rem;
+  text-align: center;
+  color: var(--wildharvest-gm-text-muted);
+  border: 1px dashed rgba(214, 166, 82, 0.18);
+  border-radius: var(--wildharvest-gm-radius-md);
+  background:
+    radial-gradient(circle at center, rgba(214, 166, 82, 0.05), transparent 42%),
+    rgba(0, 0, 0, 0.14);
+  padding: 1rem;
+}
+
+.wildharvest-gm-empty-state-card--compact {
+  min-height: 6.25rem;
+  padding: 0.85rem 1rem;
+}
+
+.wildharvest-gm-empty-state-card strong {
+  color: var(--wildharvest-gm-text);
+}
+
+.wildharvest-gm-empty-state-card p {
+  max-width: 22rem;
+  margin: 0;
+}
+
+.wildharvest-gm-empty-state-card__asset {
+  width: 38px;
+  height: 38px;
+  margin-bottom: 12px;
+  opacity: 0.78;
+  filter: drop-shadow(0 0 8px rgba(217, 170, 85, 0.22));
+}
+
+.wildharvest-gm-empty-state h3,
+.wildharvest-gm-empty-state p {
+  margin: 0;
+}
+
+.wildharvest-gm-recipient-list,
+.wildharvest-gm-compendium-list,
+.wildharvest-gm-response-list {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.wildharvest-gm-recipient,
+.wildharvest-gm-compendium-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+  padding: 0.75rem 0.8rem;
+  border-radius: 12px;
+  border: 1px solid var(--wildharvest-gm-border-soft);
+  background: rgba(18, 17, 25, 0.42);
+}
+
+.wildharvest-gm-recipient span,
+.wildharvest-gm-compendium-option span {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.wildharvest-gm-recipient small,
+.wildharvest-gm-compendium-option small {
+  color: var(--wildharvest-gm-text-muted);
+}
+
+.wildharvest-gm-progress {
+  display: grid;
+  gap: 0.15rem;
+  justify-items: end;
+  color: var(--wildharvest-gm-text-muted);
+  text-align: right;
+}
+
+.wildharvest-gm-progress strong {
+  color: var(--wildharvest-gm-accent-bright);
+  font-size: 1.4rem;
+}
+
+.wildharvest-gm-progress--badge {
+  min-width: 4.8rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--wildharvest-gm-radius-sm);
+  border: 1px solid rgba(217, 170, 85, 0.35);
+  background: rgba(217, 170, 85, 0.08);
+}
+
+.wildharvest-gm-progress__count {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.wildharvest-gm-progress__label {
+  margin-top: 0.1rem;
+  font-size: 0.72rem;
+}
+
+.wildharvest-gm-live-card {
+  align-content: start;
+  min-height: 100%;
+  height: 100%;
+}
+
+.wildharvest-gm-live-card .wildharvest-gm-response-list {
+  max-height: 32rem;
+  overflow: auto;
+  padding-right: 0.35rem;
+}
+
+.wildharvest-gm-live-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.85rem 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--wildharvest-gm-radius-md);
+  border: 1px solid var(--wildharvest-gm-border-soft);
+  background: rgba(10, 9, 14, 0.46);
+}
+
+.wildharvest-gm-live-summary__scene {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.wildharvest-gm-live-summary__scene strong,
+.wildharvest-gm-live-summary__scene p,
+.wildharvest-gm-live-summary__meta {
+  margin: 0;
+}
+
+.wildharvest-gm-live-summary p,
+.wildharvest-gm-live-summary__meta,
+.wildharvest-gm-live-more {
+  margin: 0;
+  color: var(--wildharvest-gm-text-muted);
+}
+
+.wildharvest-gm-live-filters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.wildharvest-gm-live-filters--left {
+  justify-content: flex-start;
+}
+
+.wildharvest-gm-live-filters .button {
+  min-height: 2rem;
+  padding-inline: 0.8rem;
+  border-radius: 999px;
+  border-color: rgba(217, 170, 85, 0.22);
+  background: rgba(12, 10, 16, 0.72);
+  color: #d7c5a5;
+}
+
+.wildharvest-gm-live-filters .button.is-active {
+  border-color: rgba(240, 200, 120, 0.68);
+  color: #f0c879;
+  background: rgba(217, 170, 85, 0.1);
+}
+
+.wildharvest-gm-session-detail .wildharvest-gm-response-list {
+  max-height: 38rem;
+  overflow: auto;
+  padding-right: 0.35rem;
+}
+
+.wildharvest-gm-live-card .wildharvest-gm-session-actions {
+  margin-left: auto;
+}
+
+.wildharvest-gm-live-more {
+  font-size: 0.9rem;
+}
+
+.wildharvest-card__meta--scroll {
+  max-height: 3.5rem;
+  overflow: auto;
+  padding-right: 0.2rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+  scrollbar-gutter: stable;
+}
+
+.wildharvest-gm-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.wildharvest-gm-stat {
+  display: grid;
+  gap: 0.25rem;
+  justify-items: center;
+  align-content: center;
+  min-height: 5.25rem;
+  padding: 0.75rem;
+  border-radius: var(--wildharvest-gm-radius-md);
+  border: 1px solid var(--wildharvest-gm-border-soft);
+  background: rgba(17, 16, 24, 0.44);
+  text-align: center;
+}
+
+.wildharvest-gm-stat strong {
+  color: var(--wildharvest-gm-accent-bright);
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.wildharvest-gm-stat span {
+  color: var(--wildharvest-gm-text-muted);
+  font-size: 0.88rem;
+}
+
+.wildharvest-gm-stat.is-completed strong {
+  color: var(--wildharvest-gm-success);
+}
+
+.wildharvest-gm-stat.is-accepted strong,
+.wildharvest-gm-stat.is-pending strong {
+  color: var(--wildharvest-gm-warning);
+}
+
+.wildharvest-gm-stat.is-declined strong {
+  color: var(--wildharvest-gm-text-dim);
+}
+
+.wildharvest-gm-session-card {
+  gap: 1rem;
+}
+
+.wildharvest-gm-session-detail {
+  align-content: start;
+}
+
+.wildharvest-gm-session-selector {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.wildharvest-gm-session-chip {
+  display: grid;
+  gap: 0.15rem;
+  justify-items: start;
+  width: 100%;
+  padding: 0.75rem 0.85rem;
+  text-align: left;
+  border-radius: var(--wildharvest-gm-radius-sm);
+  border: 1px solid var(--wildharvest-gm-border-soft);
+  background: rgba(14, 14, 20, 0.48);
+}
+
+.wildharvest-gm-session-chip span {
+  color: var(--wildharvest-gm-text-muted);
+  font-size: 0.88rem;
+}
+
+.wildharvest-gm-session-chip.is-active {
+  border-color: var(--wildharvest-gm-border-bright);
+  background:
+    linear-gradient(180deg, rgba(217, 170, 85, 0.16), rgba(20, 17, 25, 0.86));
+  box-shadow: var(--wildharvest-gm-glow);
+}
+
+.wildharvest-gm-response-entry {
+  display: grid;
+  gap: 0.8rem;
+  padding: 0;
+  border-radius: var(--wildharvest-gm-radius-sm);
+  border: 1px solid rgba(217, 170, 85, 0.22);
+  background:
+    linear-gradient(180deg, rgba(18, 15, 24, 0.82), rgba(9, 8, 13, 0.88));
+}
+
+.wildharvest-gm-response-entry.has-result {
+  border-color: rgba(217, 170, 85, 0.3);
+}
+
+.wildharvest-gm-response-entry.is-completed {
+  border-color: rgba(145, 185, 106, 0.28);
+}
+
+.wildharvest-gm-response-entry.is-pending {
+  border-color: rgba(217, 144, 55, 0.28);
+}
+
+.wildharvest-gm-response-entry.is-skipped {
+  border-color: rgba(143, 136, 126, 0.24);
+}
+
+.wildharvest-gm-response-entry.is-pending .wildharvest-gm-response-entry__main,
+.wildharvest-gm-response-entry.is-skipped .wildharvest-gm-response-entry__main {
+  grid-template-columns: 12px minmax(160px, 1fr) minmax(180px, 1fr) auto 26px;
+}
+
+.wildharvest-gm-response-entry__main {
+  display: grid;
+  grid-template-columns: 12px minmax(160px, 1fr) 110px 100px auto 26px;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.95rem 1rem;
+}
+
+.wildharvest-gm-response-entry__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--wildharvest-gm-text-dim);
+}
+
+.wildharvest-gm-response-entry.is-completed .wildharvest-gm-response-entry__dot {
+  background: var(--wildharvest-gm-success);
+  box-shadow: 0 0 8px rgba(145, 185, 106, 0.35);
+}
+
+.wildharvest-gm-response-entry.is-pending .wildharvest-gm-response-entry__dot {
+  background: var(--wildharvest-gm-warning);
+  box-shadow: 0 0 8px rgba(215, 169, 77, 0.35);
+}
+
+.wildharvest-gm-response-entry.is-skipped .wildharvest-gm-response-entry__dot {
+  background: var(--wildharvest-gm-text-dim);
+}
+
+.wildharvest-gm-response-entry__identity {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.wildharvest-gm-response-entry__identity strong,
+.wildharvest-gm-response-entry__identity p {
+  margin: 0;
+}
+
+.wildharvest-gm-response-entry__identity p {
+  color: var(--wildharvest-gm-text-muted);
+}
+
+.wildharvest-gm-response-entry__stat {
+  display: grid;
+  gap: 0.2rem;
+  padding-left: 0.8rem;
+  border-left: 1px solid rgba(217, 170, 85, 0.14);
+}
+
+.wildharvest-gm-response-entry__stat span {
+  color: var(--wildharvest-gm-text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.wildharvest-gm-response-entry__stat strong {
+  color: var(--wildharvest-gm-accent-bright);
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.wildharvest-gm-response-entry__waiting {
+  color: #d7c5a5;
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.wildharvest-gm-response-entry__toggle {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--wildharvest-gm-text-muted);
+  cursor: pointer;
+}
+
+.wildharvest-gm-response-entry__toggle:hover {
+  color: var(--wildharvest-gm-accent-bright);
+}
+
+.wildharvest-gm-response-entry__details {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0 1rem 1rem 2.65rem;
+  padding: 0.9rem 1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(217, 170, 85, 0.16);
+  background: rgba(5, 4, 8, 0.38);
+}
+
+.wildharvest-gm-response-entry__details strong,
+.wildharvest-gm-response-entry__details p,
+.wildharvest-gm-response-entry__details span {
+  margin: 0;
+}
+
+.wildharvest-gm-response-entry__details strong {
+  color: var(--wildharvest-gm-text);
+}
+
+.wildharvest-gm-response-entry__details p {
+  margin: 0;
+  color: #cfc0a6;
+  line-height: 1.45;
+}
+
+.wildharvest-gm-response-entry__details span {
+  color: var(--wildharvest-gm-text-muted);
+  font-size: 0.74rem;
+}
+
+.wildharvest-gm-response-entry.is-collapsed .wildharvest-gm-response-entry__details {
+  display: none;
+}
+
+.wildharvest-gm-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.38rem 0.78rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 0.84rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.wildharvest-gm-status__asset {
+  width: 13px;
+  height: 13px;
+}
+
+.wildharvest-gm-status--completed {
+  color: var(--wildharvest-gm-success);
+  background: rgba(145, 185, 106, 0.12);
+}
+
+.wildharvest-gm-status--accepted,
+.wildharvest-gm-status--pending {
+  color: var(--wildharvest-gm-warning);
+  background: rgba(215, 169, 77, 0.12);
+}
+
+.wildharvest-gm-status--declined {
+  color: var(--wildharvest-gm-text-dim);
+  background: rgba(143, 136, 126, 0.1);
+}
+
+.wildharvest-gm-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.85rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid rgba(217, 170, 85, 0.16);
+}
+
+.wildharvest-gm-footer__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--wildharvest-gm-text-muted);
+  font-size: 0.78rem;
+}
+
+.wildharvest-gm-footer__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--wildharvest-gm-success);
+  box-shadow: 0 0 8px rgba(145, 185, 106, 0.4);
+}
+
+.wildharvest-gm-footer .button {
+  min-width: 8.75rem;
+}
+
+/* Foundry already exposes the native window close control in the header.
+   Keep operational cancel buttons, but remove duplicate DialogV2 close actions. */
+:is(.wildharvest-window, .dialog:has(.wildharvest-dialog)) :is(.dialog-buttons, .form-footer) > button[data-action="close"] {
+  display: none !important;
+}
+
+:is(.wildharvest-window, .dialog:has(.wildharvest-dialog)) :is(.dialog-buttons, .form-footer):has(> button[data-action="close"]:only-child) {
+  display: none !important;
+}
+
+@media (max-width: 1180px) {
+  .wildharvest-gm-active-scene {
+    grid-template-columns: 52px minmax(0, 1fr);
+  }
+
+  .wildharvest-gm-active-scene__aside {
+    grid-column: 1 / -1;
+    justify-items: start;
+    margin-left: calc(52px + 0.9rem);
+  }
+
+  .wildharvest-gm-live-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .wildharvest-gm-live-filters {
+    justify-content: start;
+  }
+}
+
+.wildharvest-gm-preset-card {
+  align-content: start;
+}
+
+.wildharvest-gm-preset-card .wildharvest-tag-list {
+  margin-top: 0;
+}
+
+.wildharvest-gm-preset-card .wildharvest-inline-actions {
+  margin-top: auto;
+}
+
+.wildharvest-gm-preview-reward-card {
+  align-content: start;
+}
+
+.wildharvest-gm-editor-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.55fr);
+  gap: 0.6rem;
+}
+
+@media (max-width: 1180px) {
+  .wildharvest-gm-main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .wildharvest-gm-live-card .wildharvest-gm-response-list {
+    max-height: 26rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .wildharvest-card-grid--compact {
+    grid-template-columns: 1fr;
+  }
+
+  .wildharvest-section-header,
+  .wildharvest-summary-row,
+  .wildharvest-inline-actions--end {
+    justify-content: stretch;
+  }
+
+  .wildharvest-gm-tabs,
+  .wildharvest-gm-main-grid,
+  .wildharvest-gm-grid--launch,
+  .wildharvest-gm-grid--launch-secondary,
+  .wildharvest-gm-grid--responses,
+  .wildharvest-gm-form--launch,
+  .wildharvest-gm-stat-grid,
+  .wildharvest-gm-response-entry__stats,
+  .wildharvest-gm-editor-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .wildharvest-gm-response-entry__header,
+  .wildharvest-gm-card__header,
+  .wildharvest-gm-panel__header,
+  .wildharvest-gm-live-summary {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .wildharvest-gm-launch-secondary-actions,
+  .wildharvest-gm-active-scene,
+  .wildharvest-gm-response-entry__main,
+  .wildharvest-gm-footer {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .wildharvest-gm-progress {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .wildharvest-gm-launch-form-shell {
+    width: 100%;
+  }
+
+  .wildharvest-gm-response-entry__details {
+    margin-inline: 1rem;
+  }
+}
+
+.wildharvest-history {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.wildharvest-history li + li {
+  margin-top: 0.5rem;
+}
