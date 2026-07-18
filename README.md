@@ -16,7 +16,7 @@ The exact verification matrix and remaining live checks are recorded in [COMPATI
 After release `v1.14.0` has been published with the matching ZIP asset, paste this manifest URL into Foundry VTT's module installer:
 
 ```text
-https://raw.githubusercontent.com/NylramWhist/Wildharvest/main/wildharvest/module.json
+https://raw.githubusercontent.com/NylramWhist/Wildharvest/main/module.json
 ```
 
 The repository layout intentionally keeps the Foundry module in the `wildharvest` directory. The installable release archive contains that same directory at its root.
