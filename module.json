@@ -1,0 +1,65 @@
+{
+    "id":  "wildharvest",
+    "title":  "Wildharvest",
+    "description":  "A search and harvesting gameplay module for D\u0026D 5e on Foundry VTT 13 and 14.",
+    "version":  "1.20.0",
+    "authors":  [
+                    {
+                        "name":  "Tomor"
+                    }
+                ],
+    "compatibility":  {
+                          "minimum":  "13.351",
+                          "verified":  "14.360"
+                      },
+    "type":  "module",
+    "socket":  true,
+    "readme":  "README.md",
+    "changelog":  "CHANGELOG.md",
+    "languages":  [
+                      {
+                          "lang":  "en",
+                          "name":  "English",
+                          "path":  "lang/en.json"
+                      },
+                      {
+                          "lang":  "pl",
+                          "name":  "Polski",
+                          "path":  "lang/pl.json"
+                      }
+                  ],
+    "esmodules":  [
+                      "scripts/main.js"
+                  ],
+    "styles":  [
+                   "styles/module.css",
+                   "styles/gm-dialogs.css",
+                   "styles/gm-workbench.css",
+                   "styles/gm-presets.css",
+                   "styles/gm-history.css",
+                   "styles/player-dialogs.css",
+                   "styles/gm-responsive.css"
+               ],
+    "relationships":  {
+                          "systems":  [
+                                          {
+                                              "id":  "dnd5e",
+                                              "type":  "system",
+                                              "reason":  "Provides the DnD5e data paths and skill structure used by the module.",
+                                              "compatibility":  {
+                                                                    "minimum":  "5.3.0",
+                                                                    "verified":  "5.3.3"
+                                                                }
+                                          }
+                                      ],
+                          "requires":  [
+
+                                       ],
+                          "recommends":  [
+
+                                         ]
+                      },
+    "url":  "https://github.com/NylramWhist/Wildharvest",
+    "manifest":  "https://raw.githubusercontent.com/NylramWhist/Wildharvest/main/module.json",
+    "download":  "https://github.com/NylramWhist/Wildharvest/releases/download/v1.20.0/Wildharvest-1.20.0.zip"
+}
