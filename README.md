@@ -44,4 +44,4 @@ For manual installation, download `Wildharvest-1.20.0.zip` from the matching Git
 
 ## Licensing
 
-No open-source license has been selected. See [LICENSING.md](./LICENSING.md) before copying, modifying, redistributing, or publishing the project.
+I used icons from the website: https://game-icons.net/
