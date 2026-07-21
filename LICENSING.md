@@ -14,3 +14,9 @@ Before public distribution, the project owner must:
 4. review third-party dependencies, Foundry VTT, the D&D5e system, compendium content, fonts, icons, and other externally sourced materials under their own terms.
 
 Local private development releases may continue without making a public license claim. This document records project status; it is not itself a software license.
+
+
+
+Game icons by Lorc, Delapouite, and Skoll.
+Available on https://game-icons.net under the CC BY 3.0 license.
+Icons were recolored and adapted for the Wildharvest interface.
