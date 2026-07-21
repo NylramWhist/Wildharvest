@@ -42,6 +42,14 @@ For manual installation, download `Wildharvest-1.20.0.zip` from the matching Git
 
 [Support Wildharvest on Ko-fi](https://ko-fi.com/tomorrokoshii)
 
-## Licensing
+## Icon Credits
 
-I used icons from the website: https://game-icons.net/
+Some icons used in this module were created by Lorc, Delapouite, and other contributors and are available at Game-icons.net.
+
+The icons are licensed under the Creative Commons Attribution 3.0 Unported license (CC BY 3.0).
+
+Some icons may have been resized, recolored, cropped, or otherwise modified for use in this module.
+
+* Source: https://game-icons.net/
+* License: https://creativecommons.org/licenses/by/3.0/
+
