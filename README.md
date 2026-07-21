@@ -44,7 +44,7 @@ For manual installation, download `Wildharvest-1.20.0.zip` from the matching Git
 
 ## Icon Credits
 
-Some icons used in this module were created by Lorc, Delapouite, and other contributors and are available at Game-icons.net.
+ome icons used in this module were created by Lorc, Delapouite, and Skoll are available at Game-icons.net.
 
 The icons are licensed under the Creative Commons Attribution 3.0 Unported license (CC BY 3.0).
 
