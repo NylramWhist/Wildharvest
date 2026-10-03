@@ -9,13 +9,34 @@ export const SOCKET_MESSAGE_TYPES = {
   OFFER_SEARCH: "offerSearch",
   GM_RESOLUTION: "gmResolution",
   SESSION_CLOSED: "sessionClosed",
-  SESSION_SYNC: "sessionSync"
+  SESSION_SYNC: "sessionSync",
+  GM_PRESENCE: "gmPresence",
+  GM_LOOT_REVIEW: "gmLootReview"
 };
+
+// One id per browser window. Messages carry it so a window ignores only its own messages,
+// not those of another window logged in as the same user (A9).
+let clientId = "";
+export function getSocketClientId() {
+  if (!clientId) clientId = foundry.utils.randomID(16);
+  return clientId;
+}
 
 function emitSocketMessage(payload) {
   game.socket?.emit(SOCKET_EVENT, {
     ...payload,
-    senderId: game.user.id
+    senderId: game.user.id,
+    clientId: getSocketClientId()
+  });
+}
+
+export function emitGmPresence({ startedAt, leaving = false }) {
+  emitSocketMessage({
+    type: SOCKET_MESSAGE_TYPES.GM_PRESENCE,
+    sessionId: "presence",
+    gmUserId: game.user.id,
+    startedAt: Number(startedAt),
+    leaving: Boolean(leaving)
   });
 }
 
@@ -51,6 +72,15 @@ export function emitGmSearchResolution({
   emitSocketMessage({
     type: SOCKET_MESSAGE_TYPES.GM_RESOLUTION,
     ...notice
+  });
+}
+
+export function emitGmLootReview({ sessionId, targetUserId }) {
+  emitSocketMessage({
+    type: SOCKET_MESSAGE_TYPES.GM_LOOT_REVIEW,
+    sessionId,
+    gmUserId: game.user.id,
+    targetUserId
   });
 }
 

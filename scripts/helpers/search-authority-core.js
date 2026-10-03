@@ -138,6 +138,7 @@ export function completeSearchResolution(entry, result, {
   if (!entry || entry.status !== "resolving") return false;
 
   entry.status = "completed";
+  delete entry.lootReviewPending;
   entry.actorName = actorName || entry.actorName || "";
   entry.result = result;
   entry.resolutionCompletedAt = timestamp;
@@ -153,6 +154,7 @@ export function failSearchResolution(entry, {
   if (!entry || entry.status !== "resolving") return false;
 
   entry.status = "failed";
+  delete entry.lootReviewPending;
   entry.resolutionFailedAt = timestamp;
   entry.resolutionFailedAtMs = Date.now();
   entry.failureReason = String(reason ?? "").trim();

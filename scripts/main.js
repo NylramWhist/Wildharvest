@@ -1,6 +1,7 @@
 import { MODULE_ID } from "./constants.js";
 import {
   closeGmControlPanelIfInactive,
+  refreshGmControlPanelPlayers,
   openGmControlPanel
 } from "./dialogs/gm-control-panel-dialog.js";
 import { registerRulesSettingsMenu } from "./dialogs/rules-settings-menu.js";
@@ -8,28 +9,61 @@ import {
   handleActiveGmChange,
   handlePlayerRequestDocumentUpdate,
   initializeSearchSessions,
+  isCurrentUserPrimaryGm,
   processPendingPlayerRequests,
-  registerSocketListeners
+  registerSocketListeners,
+  startGmPresence
 } from "./dialogs/search-offer-dialogs.js";
 import { isActiveGmUser } from "./helpers/active-gm-core.js";
-import { getMigrationBackups } from "./helpers/migration-backup.js";
+import { emitSearchSessionSync } from "./helpers/search-session-socket.js";
+import {
+  deleteMigrationBackups,
+  getMigrationBackups,
+  pruneMigrationBackups,
+  restoreMigrationBackup
+} from "./helpers/migration-backup.js";
 import { createModuleLifecycle } from "./helpers/module-lifecycle.js";
 import { clearSearchCompendiumCache } from "./helpers/search-engine.js";
-import { preloadModuleTranslations, t } from "./i18n.js";
+import { t } from "./i18n.js";
+import { preloadModuleTemplates } from "./helpers/templates.js";
 import { migrateModuleData, registerSettings } from "./settings.js";
 
 async function runReadyMaintenance() {
   if (!game.user.isGM) return;
-  initializeSearchSessions();
   const activeGm = game.users?.activeGM;
-  if (!isActiveGmUser(game.user, activeGm)) return;
+  if (!isActiveGmUser(game.user, activeGm)) {
+    initializeSearchSessions();
+    return;
+  }
 
-  const migrationResult = await migrateModuleData();
+  // Another window may already be logged in as this GM; only the oldest one migrates and handles requests (A9).
+  await startGmPresence();
+  if (!isCurrentUserPrimaryGm()) {
+    initializeSearchSessions();
+    return;
+  }
+
+  // Migrate before scenes are loaded into memory, so the active GM never writes
+  // the old scene format back over the migrated setting.
+  let migrationResult = null;
+  try {
+    migrationResult = await migrateModuleData();
+  } catch (error) {
+    console.error(`${MODULE_ID} | Data migration failed; stored data version left unchanged.`, error);
+    ui.notifications?.error(t("WILDHARVEST.Notifications.MigrationFailed"), { permanent: true });
+  }
+  try {
+    await pruneMigrationBackups();
+  } catch (error) {
+    console.warn(`${MODULE_ID} | Failed to remove older data backups.`, error);
+  }
+  initializeSearchSessions();
   if (migrationResult?.changed) {
     console.info(
       `${MODULE_ID} | Data migration completed.`,
       migrationResult
     );
+    emitSearchSessionSync();
   }
   await processPendingPlayerRequests();
 }
@@ -37,7 +71,6 @@ async function runReadyMaintenance() {
 const lifecycle = createModuleLifecycle({
   registerSettings,
   registerRulesSettingsMenu,
-  preloadTranslations: preloadModuleTranslations,
   registerSocketListeners,
   runReadyMaintenance,
   onInitComplete: () => console.log(`${MODULE_ID} | init`),
@@ -47,8 +80,11 @@ const lifecycle = createModuleLifecycle({
 });
 
 Hooks.once("init", lifecycle.onInit);
+// Templates load in the background from "init"; windows open only after "ready".
+Hooks.once("init", () => {
+  void preloadModuleTemplates().catch(() => {});
+});
 
-Hooks.once("i18nInit", lifecycle.onI18nInit);
 
 Hooks.once("setup", () => {
   const activeModule = game.modules.get(MODULE_ID);
@@ -57,7 +93,10 @@ Hooks.once("setup", () => {
   activeModule.api = Object.freeze({
     apiVersion: 1,
     openControlPanel: openGmControlPanel,
-    getMigrationBackups
+    getMigrationBackups,
+    // 1.22.0: GM-only; restore needs { confirm: true } and a reload of the world afterwards.
+    restoreMigrationBackup,
+    deleteMigrationBackups
   });
 });
 
@@ -72,9 +111,9 @@ function getCompendiumPackId(document) {
   return String(pack?.metadata?.id ?? "").trim();
 }
 
-for (const hookName of ["createCompendium", "updateCompendium", "deleteCompendium"]) {
-  Hooks.on(hookName, (pack) => clearSearchCompendiumCache(getCompendiumPackId(pack)));
-}
+// Foundry has no createCompendium/deleteCompendium client hooks; a removed pack
+// simply stops resolving through game.packs, so only metadata updates matter here.
+Hooks.on("updateCompendium", (pack) => clearSearchCompendiumCache(getCompendiumPackId(pack)));
 
 for (const hookName of ["createItem", "updateItem", "deleteItem"]) {
   Hooks.on(hookName, (item) => {
@@ -83,6 +122,13 @@ for (const hookName of ["createItem", "updateItem", "deleteItem"]) {
   });
 }
 
+
+Hooks.on(`${MODULE_ID}.dataRestored`, () => {
+  initializeSearchSessions();
+  emitSearchSessionSync();
+  ui.notifications?.warn(t("WILDHARVEST.Notifications.BackupRestored"), { permanent: true });
+});
+
 Hooks.on("updateUser", (user, changes, options, userId) => {
   void Promise.resolve().then(() => {
     closeGmControlPanelIfInactive();
@@ -90,6 +136,8 @@ Hooks.on("updateUser", (user, changes, options, userId) => {
     handlePlayerRequestDocumentUpdate(user, changes, options, userId);
   });
 });
+
+Hooks.on("userConnected", () => refreshGmControlPanelPlayers());
 
 Hooks.on("getSceneControlButtons", (controls) => {
   if (!isActiveGmUser(game.user, game.users?.activeGM)) return;

@@ -1,80 +1,46 @@
 import {
   DATA_VERSION_SETTING_KEY,
-  LANGUAGE_MODE_SETTING_KEY,
-  LOOT_POOLS_SETTING_KEY,
-  LOCATIONS_SETTING_KEY,
+  LEGACY_PLAYER_REQUEST_FLAG,
+  LEGACY_RANDOM_LOOT_PACK_SETTING_KEY,
+  LEGACY_LOCATIONS_SETTING_KEY,
+  LEGACY_LOOT_POOLS_SETTING_KEY,
   MIGRATION_BACKUPS_SETTING_KEY,
   MODULE_ID,
-  RANDOM_LOOT_PACK_SETTING_KEY,
+  PRESETS_SETTING_KEY,
   RULES_SETTING_KEY,
+  SEARCH_LOG_FLAG,
   SEARCH_SESSIONS_SETTING_KEY,
-  SELECTED_PACK_ALIAS
+  SYSTEM_SKILL_ROLL_SETTING_KEY,
+  LOOT_APPROVAL_SETTING_KEY,
+  CHAT_RESULT_MODES,
+  CHAT_RESULT_SETTING_KEY
 } from "./constants.js";
-import { DEFAULT_LOCATIONS } from "./data/default-locations.js";
-import { DEFAULT_LOOT_POOLS } from "./data/default-loot-pools.js";
 import { DEFAULT_RULES_CONFIG } from "./data/default-rules.js";
+import { WildharvestPresetsData } from "./data/presets-model.js";
 import {
   applySettingsTransaction,
   SettingsTransactionError
 } from "./helpers/settings-transaction-core.js";
-import { createPreMigrationBackup } from "./helpers/migration-backup.js";
-import { refreshRegisteredModuleLocalization, t } from "./i18n.js";
-
-function slugify(value, fallback) {
-  const normalized = String(value ?? "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-
-  return normalized || fallback;
-}
+import { DATA_VERSION } from "./helpers/data-format-core.js";
+import {
+  MAX_VALUE_DISTINCT_ITEMS,
+  MAX_VALUE_MAX_TOTAL_ITEMS,
+  MIN_VALUE_MAX_TOTAL_ITEMS
+} from "./helpers/loot-engine-value-core.js";
+import { createPreMigrationBackup, getRawWorldSetting } from "./helpers/migration-backup.js";
+import { migrateSearchHistoryStore } from "./helpers/search-history-core.js";
+import { migratePersistedSearchSessions } from "./helpers/search-session-state.js";
+import {
+  buildPresetCatalog,
+  buildPresetLootPools,
+  normalizePackIds,
+  normalizePresetList,
+  presetsFromLegacyConfig
+} from "./helpers/preset-core.js";
+import { t } from "./i18n.js";
 
 function normalizePackId(value) {
   return String(value ?? "").trim();
-}
-
-function normalizePackIds(packIds) {
-  const values = Array.isArray(packIds) ? packIds : [packIds];
-  return [...new Set(values
-    .map(normalizePackId)
-    .filter(Boolean))];
-}
-
-function parseSelectedPackIds(rawValue) {
-  if (Array.isArray(rawValue)) {
-    return rawValue.map(normalizePackId).filter(Boolean);
-  }
-
-  const rawText = String(rawValue ?? "").trim();
-  if (!rawText) return [];
-
-  try {
-    const parsed = JSON.parse(rawText);
-    if (Array.isArray(parsed)) {
-      return parsed.map(normalizePackId).filter(Boolean);
-    }
-  } catch (_error) {
-    // Legacy single-pack string value.
-  }
-
-  return [rawText];
-}
-
-function getPackLabel(pack) {
-  const packName = pack?.title ?? pack?.metadata?.label ?? pack?.collection ?? "";
-  return packName ? `${packName} [${pack.collection}]` : "";
-}
-
-function assertItemPack(packId) {
-  const pack = game.packs.get(packId);
-  if (!pack) throw new Error(t("WILDHARVEST.Errors.PackMissing", { pack: packId }));
-  if (pack.documentName !== "Item") {
-    throw new Error(t("WILDHARVEST.Errors.PackNotItemCompendium", { pack: packId }));
-  }
-
-  return pack;
 }
 
 export function isAvailableItemPackId(packId) {
@@ -88,48 +54,6 @@ export function isAvailableItemPackId(packId) {
 export function filterAvailableItemPackIds(packIds) {
   return normalizePackIds(packIds)
     .filter((packId) => isAvailableItemPackId(packId));
-}
-
-function validateItemPackIds(packIds) {
-  for (const packId of packIds) {
-    assertItemPack(packId);
-  }
-}
-
-function normalizeLootPoolPackIds(lootPool) {
-  const rawPackIds = [
-    ...(Array.isArray(lootPool.packIds) ? lootPool.packIds : []),
-    ...(Array.isArray(lootPool.packs) ? lootPool.packs : []),
-    ...(Array.isArray(lootPool.compendiums) ? lootPool.compendiums : [])
-  ];
-
-  if (!rawPackIds.length && lootPool.packId) {
-    rawPackIds.push(lootPool.packId);
-  }
-
-  return [...new Set(rawPackIds.map(normalizePackId).filter(Boolean))];
-}
-
-function normalizeLootPool(lootPool, index) {
-  if (!lootPool || typeof lootPool !== "object") {
-    throw new Error(t("WILDHARVEST.Errors.LootPoolInvalid", { index: index + 1 }));
-  }
-
-  const name = String(lootPool.name ?? "").trim();
-  if (!name) throw new Error(t("WILDHARVEST.Errors.LootPoolNameRequired", { index: index + 1 }));
-
-  const packIds = normalizeLootPoolPackIds(lootPool);
-
-  return {
-    id: slugify(lootPool.id ?? name, `loot-pool-${index + 1}`),
-    name,
-    description: String(lootPool.description ?? "").trim(),
-    packIds
-  };
-}
-
-function normalizeLootPoolId(value) {
-  return String(value ?? "").trim() || null;
 }
 
 const RULE_RARITY_IDS = DEFAULT_RULES_CONFIG.rarityRules.map((entry) => entry.id);
@@ -306,8 +230,38 @@ function normalizeValueRules(valueRules) {
   }
   if (!seenPoints.has(0)) throw new Error(t("WILDHARVEST.Errors.ValueBracketZeroRequired"));
 
+  // 1.37.1: an emptied field (null or "") is an error, not a silent 20; a missing field (older
+  // configuration files and saved rules) still gets the default.
+  if (source.maxDistinctItems === null || source.maxDistinctItems === "") {
+    throw new Error(t("WILDHARVEST.Errors.ValueDistinctItemsInvalid", { max: MAX_VALUE_DISTINCT_ITEMS }));
+  }
+  const distinctItems = Number(source.maxDistinctItems ?? DEFAULT_RULES_CONFIG.valueRules.maxDistinctItems);
+  if (!Number.isInteger(distinctItems) || distinctItems < 1 || distinctItems > MAX_VALUE_DISTINCT_ITEMS) {
+    throw new Error(t("WILDHARVEST.Errors.ValueDistinctItemsInvalid", { max: MAX_VALUE_DISTINCT_ITEMS }));
+  }
+
+  // 1.39.0 (D25): the total copy limit. Rules saved before this version have no field, so they get
+  // the default; an emptied field in the form is an error, as with the limit of different items.
+  if (source.maxTotalItems === null || source.maxTotalItems === "") {
+    throw new Error(t("WILDHARVEST.Errors.ValueMaxTotalItemsInvalid", {
+      min: MIN_VALUE_MAX_TOTAL_ITEMS,
+      max: MAX_VALUE_MAX_TOTAL_ITEMS
+    }));
+  }
+  const maxTotalItems = Number(source.maxTotalItems ?? DEFAULT_RULES_CONFIG.valueRules.maxTotalItems);
+  if (!Number.isInteger(maxTotalItems)
+    || maxTotalItems < MIN_VALUE_MAX_TOTAL_ITEMS
+    || maxTotalItems > MAX_VALUE_MAX_TOTAL_ITEMS) {
+    throw new Error(t("WILDHARVEST.Errors.ValueMaxTotalItemsInvalid", {
+      min: MIN_VALUE_MAX_TOTAL_ITEMS,
+      max: MAX_VALUE_MAX_TOTAL_ITEMS
+    }));
+  }
+
   return {
     tolerancePercent: Math.round(tolerancePercent * 100) / 100,
+    maxDistinctItems: distinctItems,
+    maxTotalItems,
     brackets
   };
 }
@@ -326,107 +280,14 @@ export function normalizeRulesConfig(config) {
   };
 }
 
-function normalizeActivity(activity, index) {
-  if (!activity || typeof activity !== "object") {
-    throw new Error(t("WILDHARVEST.Errors.ActivityInvalid", { index: index + 1 }));
-  }
-
-  const name = String(activity.name ?? "").trim();
-  if (!name) throw new Error(t("WILDHARVEST.Errors.ActivityNameRequired", { index: index + 1 }));
-
-  return {
-    id: slugify(activity.id ?? name, `activity-${index + 1}`),
-    name,
-    description: String(activity.description ?? "").trim(),
-    lootPoolId: normalizeLootPoolId(activity.lootPoolId ?? activity.lootPool ?? activity.poolId ?? activity.pool),
-    skillId: String(activity.skillId ?? activity.skillKey ?? activity.skill ?? "").trim().toLowerCase() || null,
-    skillLabel: String(activity.skillLabel ?? t("WILDHARVEST.Default.SkillLabel")).trim() || t("WILDHARVEST.Default.SkillLabel")
-  };
-}
-
-function normalizeLocation(location, index) {
-  if (!location || typeof location !== "object") {
-    throw new Error(t("WILDHARVEST.Errors.LocationInvalid", { index: index + 1 }));
-  }
-
-  const name = String(location.name ?? "").trim();
-  if (!name) throw new Error(t("WILDHARVEST.Errors.LocationNameRequired", { index: index + 1 }));
-
-  const rawActivities = location.activities ?? [];
-  if (!Array.isArray(rawActivities) || !rawActivities.length) {
-    throw new Error(t("WILDHARVEST.Errors.LocationActivitiesRequired", { name }));
-  }
-
-  return {
-    id: slugify(location.id ?? name, `location-${index + 1}`),
-    name,
-    description: String(location.description ?? "").trim(),
-    lootPoolId: normalizeLootPoolId(location.lootPoolId ?? location.lootPool ?? location.poolId ?? location.pool),
-    activities: rawActivities.map(normalizeActivity)
-  };
-}
-
-export function normalizeLocations(data) {
-  if (!Array.isArray(data)) {
-    throw new Error(t("WILDHARVEST.Errors.ConfigArrayRequired"));
-  }
-
-  const locations = data.map(normalizeLocation);
-  const locationIds = new Set();
-  const activityIds = new Set();
-  for (const location of locations) {
-    if (locationIds.has(location.id)) {
-      throw new Error(t("WILDHARVEST.Errors.LocationDuplicateId", { id: location.id }));
-    }
-    locationIds.add(location.id);
-
-    for (const activity of location.activities) {
-      if (activityIds.has(activity.id)) {
-        throw new Error(t("WILDHARVEST.Errors.ActivityDuplicateId", { id: activity.id }));
-      }
-      activityIds.add(activity.id);
-    }
-  }
-
-  return locations;
-}
-
-export function normalizeLootPools(data) {
-  if (!Array.isArray(data)) {
-    throw new Error(t("WILDHARVEST.Errors.LootPoolsConfigArrayRequired"));
-  }
-
-  const lootPools = data.map(normalizeLootPool);
-  const seenIds = new Set();
-
-  for (const lootPool of lootPools) {
-    if (seenIds.has(lootPool.id)) {
-      throw new Error(t("WILDHARVEST.Errors.LootPoolDuplicateId", { id: lootPool.id }));
-    }
-
-    seenIds.add(lootPool.id);
-  }
-
-  return lootPools;
-}
-
-export function serializeLocations(locations) {
-  return JSON.stringify(locations, null, 2);
-}
-
-export function serializeLootPools(lootPools) {
-  return JSON.stringify(lootPools, null, 2);
-}
-
 export function serializeRulesConfig(rulesConfig) {
   return JSON.stringify(rulesConfig, null, 2);
 }
 
-const CURRENT_DEFAULT_LOCATIONS_TEXT = serializeLocations(DEFAULT_LOCATIONS);
-const CURRENT_DEFAULT_LOOT_POOLS_TEXT = serializeLootPools(DEFAULT_LOOT_POOLS);
 const CURRENT_DEFAULT_RULES_TEXT = serializeRulesConfig(DEFAULT_RULES_CONFIG);
-const CURRENT_DATA_VERSION = 1;
-const CONFIG_EXPORT_VERSION = 1;
+const CURRENT_DATA_VERSION = DATA_VERSION;
+// Version 2 (1.25.0) stores "presets"; version 1 files ("locations" + "lootPools") are still read.
+const CONFIG_EXPORT_VERSION = 2;
 const CONFIG_EXPORT_FORMAT = "wildharvest-config";
 
 export function isWildharvestConfigExport(value) {
@@ -434,114 +295,14 @@ export function isWildharvestConfigExport(value) {
     && value.format === CONFIG_EXPORT_FORMAT);
 }
 
-function sanitizeLootPoolsPackIds(lootPools) {
-  return lootPools.map((lootPool) => ({
-    ...lootPool,
-    packIds: filterAvailableItemPackIds(lootPool.packIds ?? [])
-  }));
-}
-
-function sanitizeLocationsAgainstLootPools(locations, lootPools) {
-  const validLootPoolIds = new Set((lootPools ?? []).map((lootPool) => lootPool.id));
-
-  return locations.map((location) => {
-    const locationLootPoolId = validLootPoolIds.has(location.lootPoolId) ? location.lootPoolId : null;
-
-    return {
-      ...location,
-      lootPoolId: locationLootPoolId,
-      activities: (location.activities ?? []).map((activity) => {
-        const activityLootPoolId = validLootPoolIds.has(activity.lootPoolId)
-          ? activity.lootPoolId
-          : locationLootPoolId;
-
-        return {
-          ...activity,
-          description: String(activity.description ?? "").trim(),
-          lootPoolId: activityLootPoolId,
-          skillId: String(activity.skillId ?? "").trim().toLowerCase() || null
-        };
-      })
-    };
-  });
-}
-
-function getStoredSelectedRandomLootPackIdsRaw() {
-  return parseSelectedPackIds(game.settings.get(MODULE_ID, RANDOM_LOOT_PACK_SETTING_KEY));
-}
-
-function sanitizeSelectedRandomLootPackIds(packIds) {
-  return filterAvailableItemPackIds(packIds);
-}
-
-async function canonicalizeQuickOptionsConfigFromTexts(locationsText, lootPoolsText) {
-  const {
-    getQuickOptionsFromRawText,
-    sanitizeQuickOptionsForStorage,
-    serializeQuickOptionsTexts
-  } = await import("./helpers/activity-presets.js");
-
-  const quickOptions = sanitizeQuickOptionsForStorage(
-    getQuickOptionsFromRawText(locationsText, lootPoolsText)
-      .map((option) => ({
-        ...option,
-        description: String(option.description ?? "").trim(),
-        skillId: String(option.skillId ?? "").trim().toLowerCase() || null,
-        lootPoolId: String(option.lootPoolId ?? option.id ?? "").trim() || String(option.id ?? "").trim(),
-        packIds: normalizePackIds(option.packIds ?? [])
-      }))
-  );
-
-  return {
-    quickOptions,
-    ...serializeQuickOptionsTexts(quickOptions)
-  };
-}
-
 export function registerSettings() {
-  game.settings.register(MODULE_ID, LANGUAGE_MODE_SETTING_KEY, {
-    name: "WILDHARVEST.Setting.Language.Name",
-    hint: "WILDHARVEST.Setting.Language.Hint",
-    scope: "client",
-    config: true,
-    type: String,
-    choices: {
-      auto: "WILDHARVEST.Setting.Language.Auto",
-      en: "WILDHARVEST.Setting.Language.English",
-      pl: "WILDHARVEST.Setting.Language.Polish"
-    },
-    default: "en",
-    onChange: () => {
-      refreshRegisteredModuleLocalization();
-      ui.notifications?.info(t("WILDHARVEST.Notifications.LanguageChanged"));
-    }
-  });
-
-  game.settings.register(MODULE_ID, LOCATIONS_SETTING_KEY, {
-    name: "WILDHARVEST.Setting.Locations.Name",
-    hint: "WILDHARVEST.Setting.Locations.Hint",
+  game.settings.register(MODULE_ID, PRESETS_SETTING_KEY, {
+    name: "WILDHARVEST.Setting.Presets.Name",
+    hint: "WILDHARVEST.Setting.Presets.Hint",
     scope: "world",
     config: false,
-    type: String,
-    default: CURRENT_DEFAULT_LOCATIONS_TEXT
-  });
-
-  game.settings.register(MODULE_ID, LOOT_POOLS_SETTING_KEY, {
-    name: "WILDHARVEST.Setting.LootPools.Name",
-    hint: "WILDHARVEST.Setting.LootPools.Hint",
-    scope: "world",
-    config: false,
-    type: String,
-    default: CURRENT_DEFAULT_LOOT_POOLS_TEXT
-  });
-
-  game.settings.register(MODULE_ID, RANDOM_LOOT_PACK_SETTING_KEY, {
-    name: "WILDHARVEST.Setting.RandomLootPack.Name",
-    hint: "WILDHARVEST.Setting.RandomLootPack.Hint",
-    scope: "world",
-    config: false,
-    type: String,
-    default: ""
+    type: WildharvestPresetsData,
+    default: { presets: [] }
   });
 
   game.settings.register(MODULE_ID, RULES_SETTING_KEY, {
@@ -571,6 +332,38 @@ export function registerSettings() {
     default: "[]"
   });
 
+  game.settings.register(MODULE_ID, SYSTEM_SKILL_ROLL_SETTING_KEY, {
+    name: "WILDHARVEST.Setting.SystemSkillRoll.Name",
+    hint: "WILDHARVEST.Setting.SystemSkillRoll.Hint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true
+  });
+
+  game.settings.register(MODULE_ID, LOOT_APPROVAL_SETTING_KEY, {
+    name: "WILDHARVEST.Setting.LootApproval.Name",
+    hint: "WILDHARVEST.Setting.LootApproval.Hint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false
+  });
+
+  game.settings.register(MODULE_ID, CHAT_RESULT_SETTING_KEY, {
+    name: "WILDHARVEST.Setting.ChatResult.Name",
+    hint: "WILDHARVEST.Setting.ChatResult.Hint",
+    scope: "world",
+    config: true,
+    type: String,
+    choices: {
+      off: "WILDHARVEST.Setting.ChatResult.Off",
+      public: "WILDHARVEST.Setting.ChatResult.Public",
+      gm: "WILDHARVEST.Setting.ChatResult.Gm"
+    },
+    default: "off"
+  });
+
   game.settings.register(MODULE_ID, MIGRATION_BACKUPS_SETTING_KEY, {
     name: "WILDHARVEST.Setting.MigrationBackups.Name",
     hint: "WILDHARVEST.Setting.MigrationBackups.Hint",
@@ -581,41 +374,98 @@ export function registerSettings() {
   });
 }
 
-export function getLocationsText() {
-  return game.settings.get(MODULE_ID, LOCATIONS_SETTING_KEY) ?? CURRENT_DEFAULT_LOCATIONS_TEXT;
+export function isSystemSkillRollEnabled() {
+  try {
+    return game.settings.get(MODULE_ID, SYSTEM_SKILL_ROLL_SETTING_KEY) !== false;
+  } catch (_error) {
+    return true;
+  }
 }
 
-export function getLootPoolsText() {
-  return game.settings.get(MODULE_ID, LOOT_POOLS_SETTING_KEY) ?? CURRENT_DEFAULT_LOOT_POOLS_TEXT;
+export function isLootApprovalEnabled() {
+  try {
+    return game.settings.get(MODULE_ID, LOOT_APPROVAL_SETTING_KEY) === true;
+  } catch (_error) {
+    return false;
+  }
+}
+
+export function getChatResultMode() {
+  try {
+    const mode = game.settings.get(MODULE_ID, CHAT_RESULT_SETTING_KEY);
+    return CHAT_RESULT_MODES.includes(mode) ? mode : "off";
+  } catch (_error) {
+    return "off";
+  }
 }
 
 export function getRulesConfigText() {
   return game.settings.get(MODULE_ID, RULES_SETTING_KEY) ?? CURRENT_DEFAULT_RULES_TEXT;
 }
 
-export function getLocations() {
+// The old settings were String settings holding JSON text; a restored backup may hold the array
+// itself. Returns the array, or null when the setting is missing or unreadable.
+function readLegacyPresetSetting(key) {
+  const setting = getRawWorldSetting(key);
+  if (!setting) return null;
+  let value = setting.value;
   try {
-    const normalizedLocations = normalizeLocations(JSON.parse(getLocationsText()));
-    return sanitizeLocationsAgainstLootPools(normalizedLocations, getLootPools());
+    if (typeof value === "string") value = JSON.parse(value);
+  } catch (_error) {
+    return null;
+  }
+  return Array.isArray(value) ? value : null;
+}
+
+// Presets as plain objects. Until the migration to data version 3 has run (the active GM does it
+// at start), a world that still has the old "locations" + "lootPools" settings is read from them.
+export function getPresets() {
+  try {
+    if (!getRawWorldSetting(PRESETS_SETTING_KEY)) {
+      const legacyLocations = readLegacyPresetSetting(LEGACY_LOCATIONS_SETTING_KEY);
+      if (legacyLocations) {
+        return presetsFromLegacyConfig(legacyLocations, readLegacyPresetSetting(LEGACY_LOOT_POOLS_SETTING_KEY) ?? []);
+      }
+    }
+    const stored = game.settings.get(MODULE_ID, PRESETS_SETTING_KEY);
+    const plain = typeof stored?.toObject === "function" ? stored.toObject() : stored;
+    return normalizePresetList(plain?.presets ?? []);
   } catch (error) {
-    console.error(`${MODULE_ID} | Failed to load location configuration.`, error);
+    console.error(`${MODULE_ID} | Failed to load presets.`, error);
     ui.notifications?.error(t("WILDHARVEST.Notifications.ConfigInvalid"));
-    return normalizeLocations(DEFAULT_LOCATIONS);
+    return [];
   }
 }
 
+export async function savePresets(presets) {
+  const normalized = normalizePresetList(presets);
+  await game.settings.set(MODULE_ID, PRESETS_SETTING_KEY, { presets: normalized });
+  return normalized;
+}
+
+function getSkillLabelForCatalog(skillId) {
+  if (!skillId) return t("WILDHARVEST.Default.SkillLabel");
+  const entry = globalThis.CONFIG?.DND5E?.skills?.[skillId];
+  const label = typeof entry === "string" ? entry : entry?.label;
+  if (!label) return skillId;
+  return label.includes(".") ? (game.i18n?.localize?.(label) ?? label) : label;
+}
+
+// Read-only view of the presets in the location + activity + loot pool shape that scenes,
+// the roll dialogs and the loot engine use. The location is not stored anywhere (1.25.0).
+export function getLocations() {
+  return buildPresetCatalog(getPresets(), {
+    name: t("WILDHARVEST.Default.ActivityCatalogName"),
+    description: t("WILDHARVEST.Default.ActivityCatalogDescription"),
+    skillLabel: getSkillLabelForCatalog
+  });
+}
+
 export function getLootPools() {
-  try {
-    const normalizedLootPools = parseLootPoolsFromText(getLootPoolsText(), {
-      validatePackIds: false,
-      filterUnavailablePackIds: true
-    });
-    return sanitizeLootPoolsPackIds(normalizedLootPools);
-  } catch (error) {
-    console.error(`${MODULE_ID} | Failed to load loot pool configuration.`, error);
-    ui.notifications?.error(t("WILDHARVEST.Notifications.ConfigInvalid"));
-    return normalizeLootPools(DEFAULT_LOOT_POOLS);
-  }
+  return buildPresetLootPools(getPresets()).map((lootPool) => ({
+    ...lootPool,
+    packIds: filterAvailableItemPackIds(lootPool.packIds)
+  }));
 }
 
 export function getRulesConfig() {
@@ -629,7 +479,7 @@ export function getRulesConfig() {
 }
 
 export function getLootPoolById(lootPoolId) {
-  const normalizedLootPoolId = normalizeLootPoolId(lootPoolId);
+  const normalizedLootPoolId = String(lootPoolId ?? "").trim() || null;
   if (!normalizedLootPoolId) return null;
 
   return getLootPools().find((lootPool) => lootPool.id === normalizedLootPoolId) ?? null;
@@ -639,124 +489,9 @@ export function getLootPoolPackIds(lootPoolId) {
   return getLootPoolById(lootPoolId)?.packIds ?? [];
 }
 
-export function getLootPoolLabel(lootPoolId) {
-  const lootPool = getLootPoolById(lootPoolId);
-  return lootPool?.name ?? String(lootPoolId ?? "").trim();
-}
-
-export function isSelectedPackAlias(packId) {
-  return String(packId ?? "").trim().toLowerCase() === SELECTED_PACK_ALIAS;
-}
-
-export function getSelectedRandomLootPackId() {
-  return getSelectedRandomLootPackIds()[0] ?? "";
-}
-
-export function getSelectedRandomLootPack() {
-  const packId = getSelectedRandomLootPackId();
-  return packId ? game.packs.get(packId) ?? null : null;
-}
-
-export function getSelectedRandomLootPackIds() {
-  return sanitizeSelectedRandomLootPackIds(getStoredSelectedRandomLootPackIdsRaw());
-}
-
-export function getSelectedRandomLootPacks() {
-  return getSelectedRandomLootPackIds()
-    .map((packId) => game.packs.get(packId) ?? null)
-    .filter(Boolean);
-}
-
-export function getSelectedRandomLootPackLabel() {
-  return getSelectedRandomLootPackLabels().join(", ");
-}
-
-export function getSelectedRandomLootPackLabels() {
-  return getSelectedRandomLootPacks()
-    .map((pack) => getPackLabel(pack))
-    .filter(Boolean);
-}
-
-export function hasSelectedRandomLootPacks() {
-  return getSelectedRandomLootPackIds().length > 0;
-}
-
-export async function saveSelectedRandomLootPack(packId) {
-  return saveSelectedRandomLootPacks(packId ? [packId] : []);
-}
-
-export async function saveSelectedRandomLootPacks(packIds) {
-  const normalizedPackIds = [...new Set((Array.isArray(packIds) ? packIds : [packIds])
-    .map(normalizePackId)
-    .filter(Boolean))];
-
-  if (!normalizedPackIds.length) {
-    await game.settings.set(MODULE_ID, RANDOM_LOOT_PACK_SETTING_KEY, "");
-    return [];
-  }
-
-  validateItemPackIds(normalizedPackIds);
-
-  await game.settings.set(MODULE_ID, RANDOM_LOOT_PACK_SETTING_KEY, JSON.stringify(normalizedPackIds));
-  return normalizedPackIds;
-}
-
-export function resolveRewardPackId(packId) {
-  const normalizedPackId = String(packId ?? "").trim();
-  if (!isSelectedPackAlias(normalizedPackId)) return normalizedPackId;
-
-  const selectedPackId = getSelectedRandomLootPackId();
-  if (!selectedPackId) throw new Error(t("WILDHARVEST.Errors.SelectedPackNotConfigured"));
-  return selectedPackId;
-}
-
-export function getRewardPackLabel(packId) {
-  const normalizedPackId = String(packId ?? "").trim();
-  if (!isSelectedPackAlias(normalizedPackId)) return normalizedPackId;
-
-  return getSelectedRandomLootPackLabel() || t("WILDHARVEST.Config.SelectedPackPlaceholder");
-}
-
-export function parseLocationsFromText(rawText) {
-  const parsed = JSON.parse(rawText);
-  return normalizeLocations(parsed);
-}
-
-export function parseLootPoolsFromText(rawText, options = {}) {
-  const {
-    validatePackIds = true,
-    filterUnavailablePackIds = false
-  } = options;
-
-  const parsed = JSON.parse(rawText);
-  let normalized = normalizeLootPools(parsed);
-
-  if (filterUnavailablePackIds) {
-    normalized = sanitizeLootPoolsPackIds(normalized);
-  }
-
-  if (validatePackIds) {
-    validateItemPackIds(normalized.flatMap((lootPool) => lootPool.packIds));
-  }
-
-  return normalized;
-}
-
 export function parseRulesConfigFromText(rawText) {
   const parsed = JSON.parse(rawText);
   return normalizeRulesConfig(parsed);
-}
-
-export async function saveLocationsFromText(rawText) {
-  const normalized = parseLocationsFromText(rawText);
-  await game.settings.set(MODULE_ID, LOCATIONS_SETTING_KEY, serializeLocations(normalized));
-  return normalized;
-}
-
-export async function saveLootPoolsFromText(rawText, options = {}) {
-  const normalized = parseLootPoolsFromText(rawText, options);
-  await game.settings.set(MODULE_ID, LOOT_POOLS_SETTING_KEY, serializeLootPools(normalized));
-  return normalized;
 }
 
 export async function saveRulesConfigFromText(rawText) {
@@ -773,10 +508,8 @@ export function getModuleConfigExportData() {
     dataVersion: CURRENT_DATA_VERSION,
     moduleVersion: game.modules?.get(MODULE_ID)?.version ?? null,
     exportedAt: new Date().toISOString(),
-    locations: getLocations(),
-    lootPools: getLootPools(),
-    rulesConfig: getRulesConfig(),
-    selectedRandomLootPackIds: getSelectedRandomLootPackIds()
+    presets: getPresets(),
+    rulesConfig: getRulesConfig()
   };
 }
 
@@ -796,35 +529,30 @@ export async function importModuleConfigFromText(rawText) {
     throw new Error(t("WILDHARVEST.Errors.ImportConfigInvalid"));
   }
 
-  const locations = normalizeLocations(parsed.locations ?? []);
-  const lootPools = parseLootPoolsFromText(JSON.stringify(parsed.lootPools ?? []), {
-    validatePackIds: false,
-    filterUnavailablePackIds: true
-  });
+  // Version 1 files (1.20.x–1.24.x) hold "locations" + "lootPools" instead of "presets".
+  const importedPresets = Array.isArray(parsed.presets)
+    ? normalizePresetList(parsed.presets)
+    : presetsFromLegacyConfig(parsed.locations ?? [], parsed.lootPools ?? []);
+  const presets = importedPresets.map((preset) => ({
+    ...preset,
+    packIds: filterAvailableItemPackIds(preset.packIds)
+  }));
+  // Exports from 1.20.x may carry selectedRandomLootPackIds; that fallback no longer exists.
   const rulesConfig = normalizeRulesConfig(parsed.rulesConfig ?? parsed.rules ?? {});
-  const selectedRandomLootPackIds = sanitizeSelectedRandomLootPackIds(
-    parsed.selectedRandomLootPackIds ?? parsed.selectedPackIds ?? []
-  );
-
-  const canonicalized = await canonicalizeQuickOptionsConfigFromTexts(
-    serializeLocations(sanitizeLocationsAgainstLootPools(locations, lootPools)),
-    serializeLootPools(lootPools)
-  );
 
   const changes = [
-    { key: LOCATIONS_SETTING_KEY, value: canonicalized.locationsText },
-    { key: LOOT_POOLS_SETTING_KEY, value: canonicalized.lootPoolsText },
-    { key: RULES_SETTING_KEY, value: serializeRulesConfig(rulesConfig) },
-    {
-      key: RANDOM_LOOT_PACK_SETTING_KEY,
-      value: selectedRandomLootPackIds.length ? JSON.stringify(selectedRandomLootPackIds) : ""
-    },
-    { key: DATA_VERSION_SETTING_KEY, value: CURRENT_DATA_VERSION }
+    { key: PRESETS_SETTING_KEY, value: { presets } },
+    // The data version is left alone: importing configuration does not migrate actor history
+    // or scenes, so only migrateModuleData may mark the world data as current.
+    { key: RULES_SETTING_KEY, value: serializeRulesConfig(rulesConfig) }
   ];
 
   try {
     await applySettingsTransaction(changes, {
-      getValue: (key) => game.settings.get(MODULE_ID, key),
+      getValue: (key) => {
+        const value = game.settings.get(MODULE_ID, key);
+        return typeof value?.toObject === "function" ? value.toObject() : value;
+      },
       setValue: (key, value) => game.settings.set(MODULE_ID, key, value)
     });
   } catch (error) {
@@ -836,25 +564,113 @@ export async function importModuleConfigFromText(rawText) {
   }
 
   return {
-    ...canonicalized,
-    rulesConfig,
-    selectedRandomLootPackIds
+    presets,
+    rulesConfig
   };
 }
 
+// Data version 2 (1.21.0): compact actor history, compact scenes, one flag key per player
+// request, ISO timestamps, no "@selected" fallback setting. Every step is idempotent, so a
+// failed run is simply repeated at the next start; the version is written only at the end.
+async function migrateActorHistoryToV2() {
+  const updates = [];
+  for (const actor of game.actors?.contents ?? []) {
+    const rawStore = actor.getFlag(MODULE_ID, SEARCH_LOG_FLAG);
+    if (rawStore === undefined || rawStore === null) continue;
+    const store = migrateSearchHistoryStore(foundry.utils.deepClone(rawStore));
+    // Arrays are replaced whole on update, so fields dropped from entries do not survive the merge.
+    updates.push({ _id: actor.id, [`flags.${MODULE_ID}.${SEARCH_LOG_FLAG}`]: store });
+  }
+  if (updates.length) await Actor.implementation.updateDocuments(updates);
+  return updates.length;
+}
+
+async function migrateSearchSessionsToV2() {
+  const sessions = migratePersistedSearchSessions(game.settings.get(MODULE_ID, SEARCH_SESSIONS_SETTING_KEY));
+  if (!sessions) {
+    console.warn(`${MODULE_ID} | Stored search sessions could not be read; they were left unchanged.`);
+    return 0;
+  }
+  await game.settings.set(MODULE_ID, SEARCH_SESSIONS_SETTING_KEY, JSON.stringify(sessions));
+  return sessions.length;
+}
+
+async function removeLegacyPlayerRequestFlags() {
+  let removed = 0;
+  for (const user of game.users?.contents ?? []) {
+    if (user.getFlag(MODULE_ID, LEGACY_PLAYER_REQUEST_FLAG) === undefined) continue;
+    await user.unsetFlag(MODULE_ID, LEGACY_PLAYER_REQUEST_FLAG);
+    removed += 1;
+  }
+  return removed;
+}
+
+// The setting is no longer registered, so its stored world value is removed as a Setting document.
+async function removeLegacyRandomLootPackSetting() {
+  const setting = getRawWorldSetting(LEGACY_RANDOM_LOOT_PACK_SETTING_KEY);
+  if (!setting) return false;
+  await setting.delete();
+  return true;
+}
+
+async function migrateToDataVersion2() {
+  return {
+    actorsWithHistory: await migrateActorHistoryToV2(),
+    searchSessions: await migrateSearchSessionsToV2(),
+    legacyPlayerRequests: await removeLegacyPlayerRequestFlags(),
+    legacyRandomLootPackRemoved: await removeLegacyRandomLootPackSetting()
+  };
+}
+
+// Data version 3 (1.25.0): the presets move from the "locations" + "lootPools" JSON texts to the
+// "presets" setting (PresetsData). Idempotent: without the old settings there is nothing to do.
+async function migrateToDataVersion3() {
+  const locationsSetting = getRawWorldSetting(LEGACY_LOCATIONS_SETTING_KEY);
+  const lootPoolsSetting = getRawWorldSetting(LEGACY_LOOT_POOLS_SETTING_KEY);
+  if (!locationsSetting && !lootPoolsSetting) return { presets: null, legacySettingsRemoved: 0 };
+
+  const legacyLocations = locationsSetting ? readLegacyPresetSetting(LEGACY_LOCATIONS_SETTING_KEY) : [];
+  const legacyLootPools = lootPoolsSetting ? readLegacyPresetSetting(LEGACY_LOOT_POOLS_SETTING_KEY) : [];
+  if (!legacyLocations || !legacyLootPools) {
+    // Unreadable old presets stay where they are (and in the backup) instead of being deleted.
+    console.warn(`${MODULE_ID} | Old preset settings could not be read; they were left unchanged.`);
+    return { presets: null, legacySettingsRemoved: 0 };
+  }
+  const presets = presetsFromLegacyConfig(legacyLocations, legacyLootPools);
+  await savePresets(presets);
+
+  let legacySettingsRemoved = 0;
+  for (const setting of [locationsSetting, lootPoolsSetting]) {
+    if (!setting) continue;
+    await setting.delete();
+    legacySettingsRemoved += 1;
+  }
+  return { presets: presets.length, legacySettingsRemoved };
+}
+
 export async function migrateModuleData() {
+  const storedDataVersion = Number(game.settings.get(MODULE_ID, DATA_VERSION_SETTING_KEY) ?? 0);
+  const changed = storedDataVersion !== CURRENT_DATA_VERSION;
+  // Back up only when the stored data version is about to change; a new module
+  // release with the same data version has nothing to migrate.
+  if (!changed) {
+    return { changed, currentDataVersion: CURRENT_DATA_VERSION, migrationBackup: null };
+  }
+
   const migrationBackup = await createPreMigrationBackup({
     targetDataVersion: CURRENT_DATA_VERSION
   });
-  const currentDataVersion = Number(game.settings.get(MODULE_ID, DATA_VERSION_SETTING_KEY) ?? 0);
-  const changed = currentDataVersion !== CURRENT_DATA_VERSION;
-  if (changed) {
-    await game.settings.set(MODULE_ID, DATA_VERSION_SETTING_KEY, CURRENT_DATA_VERSION);
-  }
+  const steps = {
+    v2: storedDataVersion < 2 ? await migrateToDataVersion2() : null,
+    v3: storedDataVersion < 3 ? await migrateToDataVersion3() : null
+  };
+  await game.settings.set(MODULE_ID, DATA_VERSION_SETTING_KEY, CURRENT_DATA_VERSION);
 
   return {
     changed,
+    sourceDataVersion: storedDataVersion,
     currentDataVersion: CURRENT_DATA_VERSION,
-    migrationBackup
+    migrationBackup,
+    steps
   };
 }

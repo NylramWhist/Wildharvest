@@ -1,179 +1,58 @@
-import { LANGUAGE_MODE_SETTING_KEY, MODULE_ID } from "./constants.js";
+// Since 1.27.0 (D8) Wildharvest uses Foundry's own translations (game.i18n): the texts come from
+// lang/en.json and lang/pl.json declared in module.json, in the language chosen in Foundry.
+// English is Foundry's fallback for any missing key. t() stays as a short name for localize/format.
 
-export const MODULE_LOCALES = Object.freeze(["en", "pl"]);
-
-const MODULE_TRANSLATION_PATHS = Object.freeze(Object.fromEntries(
-  MODULE_LOCALES.map((locale) => [locale, `modules/${MODULE_ID}/lang/${locale}.json`])
-));
-
-const MODULE_TRANSLATION_CACHE = Object.fromEntries(
-  MODULE_LOCALES.map((locale) => [locale, null])
-);
-const MODULE_TRANSLATION_PROMISES = new Map();
-const REGISTERED_LOCALIZATION_KEYS = new WeakMap();
-
-export function normalizeModuleLocale(value) {
-  return String(value ?? "").trim().toLowerCase().startsWith("pl") ? "pl" : "en";
-}
-
-export function normalizeModuleLanguageMode(value) {
-  const normalizedValue = String(value ?? "").trim().replace(/^"|"$/g, "").toLowerCase();
-  return ["auto", ...MODULE_LOCALES].includes(normalizedValue) ? normalizedValue : "";
-}
-
-export function formatModuleTranslation(template, data = {}) {
-  return String(template).replace(/\{([^}]+)\}/g, (_match, key) => {
-    const value = data[key];
-    return value ?? `{${key}}`;
-  });
-}
-
-function readStoredLanguageMode() {
-  const storageKey = `${MODULE_ID}.${LANGUAGE_MODE_SETTING_KEY}`;
-  return globalThis.game?.settings?.storage?.get?.("client")?.get?.(storageKey)?.value
-    ?? globalThis.game?.settings?.storage?.get?.("world")?.get?.(storageKey)?.value
-    ?? "";
-}
-
-export function getModuleLanguageMode() {
-  try {
-    const liveValue = normalizeModuleLanguageMode(
-      globalThis.game?.settings?.get?.(MODULE_ID, LANGUAGE_MODE_SETTING_KEY)
-    );
-    if (liveValue) return liveValue;
-  } catch (_error) {
-    // Fall back to raw storage during startup, before the setting is registered.
-  }
-
-  return normalizeModuleLanguageMode(readStoredLanguageMode()) || "en";
+export function t(key, data = {}) {
+  const i18n = globalThis.game?.i18n;
+  if (!i18n) return key;
+  return data && Object.keys(data).length > 0 ? i18n.format(key, data) : i18n.localize(key);
 }
 
 export function getModuleLocale() {
-  const languageMode = getModuleLanguageMode();
-  if (MODULE_LOCALES.includes(languageMode)) return languageMode;
-  return normalizeModuleLocale(globalThis.game?.i18n?.lang || "en");
+  return String(globalThis.game?.i18n?.lang || "en");
 }
 
+// Locale tag for dates, numbers and sorting. The module has English and Polish texts only, so any
+// other Foundry language (shown with the English texts) also gets English formats.
 export function getModuleLocaleTag() {
   return getModuleLocale() === "pl" ? "pl-PL" : "en-US";
 }
 
-function getGameLocalized(key, data = {}) {
-  const i18n = globalThis.game?.i18n;
-  if (!i18n) return key;
-
-  return Object.keys(data).length > 0
-    ? i18n.format?.(key, data) ?? key
-    : i18n.localize?.(key) ?? key;
+// Timestamps are stored as ISO 8601 since 1.21.0 and shown in the Foundry language.
+// Text that is not a date (an old entry the migration could not read) is shown as is.
+export function formatModuleTimestamp(value) {
+  const text = String(value ?? "").trim();
+  if (!text) return "";
+  if (!/^\d{4}-\d{2}-\d{2}T/.test(text)) return text;
+  const time = Date.parse(text);
+  return Number.isNaN(time) ? text : new Date(time).toLocaleString(getModuleLocaleTag());
 }
 
-function isTranslationDictionary(value) {
-  return Boolean(
-    value
-    && typeof value === "object"
-    && !Array.isArray(value)
-    && Object.values(value).every((translation) => typeof translation === "string")
-  );
+// Day and time of a stored ISO timestamp, for lists grouped by day (1.31.0). Empty for text
+// that is not a date.
+function parseModuleTimestamp(value) {
+  const text = String(value ?? "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}T/.test(text)) return null;
+  const time = Date.parse(text);
+  return Number.isNaN(time) ? null : new Date(time);
 }
 
-async function loadModuleTranslations(locale) {
-  const normalizedLocale = normalizeModuleLocale(locale);
-  if (MODULE_TRANSLATION_CACHE[normalizedLocale]) return MODULE_TRANSLATION_CACHE[normalizedLocale];
-  if (MODULE_TRANSLATION_PROMISES.has(normalizedLocale)) {
-    return MODULE_TRANSLATION_PROMISES.get(normalizedLocale);
-  }
-
-  const promise = Promise.resolve()
-    .then(async () => {
-      const response = await globalThis.fetch(MODULE_TRANSLATION_PATHS[normalizedLocale]);
-      if (!response?.ok) {
-        throw new Error(`Failed to load ${normalizedLocale} translations from ${MODULE_TRANSLATION_PATHS[normalizedLocale]}.`);
-      }
-
-      const strings = await response.json();
-      if (!isTranslationDictionary(strings)) {
-        throw new Error(`Invalid ${normalizedLocale} translation dictionary.`);
-      }
-
-      MODULE_TRANSLATION_CACHE[normalizedLocale] = Object.freeze({ ...strings });
-      return MODULE_TRANSLATION_CACHE[normalizedLocale];
-    })
-    .finally(() => {
-      MODULE_TRANSLATION_PROMISES.delete(normalizedLocale);
-    });
-
-  MODULE_TRANSLATION_PROMISES.set(normalizedLocale, promise);
-  return promise;
+export function formatModuleDay(value) {
+  return parseModuleTimestamp(value)?.toLocaleDateString(getModuleLocaleTag(), { dateStyle: "medium" }) ?? "";
 }
 
-function getRegisteredLocalizationKeys(registration) {
-  const storedKeys = REGISTERED_LOCALIZATION_KEYS.get(registration) ?? {
-    fields: {},
-    choices: {}
-  };
-
-  for (const field of ["name", "label", "hint"]) {
-    const value = registration?.[field];
-    if (typeof value === "string" && value.startsWith("WILDHARVEST.")) {
-      storedKeys.fields[field] = value;
-    }
-  }
-
-  for (const [choice, value] of Object.entries(registration?.choices ?? {})) {
-    if (typeof value === "string" && value.startsWith("WILDHARVEST.")) {
-      storedKeys.choices[choice] = value;
-    }
-  }
-
-  REGISTERED_LOCALIZATION_KEYS.set(registration, storedKeys);
-  return storedKeys;
+export function formatModuleClock(value) {
+  return parseModuleTimestamp(value)?.toLocaleTimeString(getModuleLocaleTag(), { timeStyle: "short" }) ?? "";
 }
 
-function refreshRegisteredEntry(registration) {
-  if (!registration || typeof registration !== "object") return;
-  const localizationKeys = getRegisteredLocalizationKeys(registration);
-
-  for (const [field, key] of Object.entries(localizationKeys.fields)) {
-    registration[field] = t(key);
-  }
-
-  for (const [choice, key] of Object.entries(localizationKeys.choices)) {
-    registration.choices[choice] = t(key);
-  }
+// Numbers such as GP values in the Foundry language ("0,02" in Polish, "0.02" in English).
+export function formatModuleNumber(value, { maximumFractionDigits = 2 } = {}) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return String(value ?? "");
+  return new Intl.NumberFormat(getModuleLocaleTag(), { maximumFractionDigits }).format(number);
 }
 
-export function refreshRegisteredModuleLocalization() {
-  const settings = globalThis.game?.settings;
-  for (const registration of settings?.settings?.values?.() ?? []) {
-    if (registration?.namespace === MODULE_ID) refreshRegisteredEntry(registration);
-  }
-  for (const registration of settings?.menus?.values?.() ?? []) {
-    if (registration?.namespace === MODULE_ID) refreshRegisteredEntry(registration);
-  }
-}
-
-export async function preloadModuleTranslations() {
-  await Promise.all(MODULE_LOCALES.map((locale) => loadModuleTranslations(locale)));
-  refreshRegisteredModuleLocalization();
-}
-
-export function t(key, data = {}) {
-  const languageMode = getModuleLanguageMode();
-  if (languageMode === "auto") {
-    const localized = getGameLocalized(key, data);
-    if (localized !== key) return localized;
-  }
-
-  const preferredStrings = MODULE_TRANSLATION_CACHE[getModuleLocale()];
-  if (preferredStrings?.[key] !== undefined) {
-    return formatModuleTranslation(preferredStrings[key], data);
-  }
-
-  const englishStrings = MODULE_TRANSLATION_CACHE.en;
-  if (englishStrings?.[key] !== undefined) {
-    return formatModuleTranslation(englishStrings[key], data);
-  }
-
-  const localized = getGameLocalized(key, data);
-  return localized !== key ? localized : key;
+// Name sorting that follows the Foundry language instead of a fixed locale.
+export function compareByModuleLocale(left, right) {
+  return String(left ?? "").localeCompare(String(right ?? ""), getModuleLocaleTag());
 }

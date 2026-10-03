@@ -1,3 +1,19 @@
+// Only physical dnd5e item types can drop as loot. Spells, features, classes,
+// subclasses, backgrounds and species must never be granted by a search.
+export const PHYSICAL_ITEM_TYPES = Object.freeze([
+  "weapon",
+  "equipment",
+  "consumable",
+  "tool",
+  "loot",
+  "container"
+]);
+const PHYSICAL_ITEM_TYPE_SET = new Set(PHYSICAL_ITEM_TYPES);
+
+export function isPhysicalItemDocument(document) {
+  return PHYSICAL_ITEM_TYPE_SET.has(String(document?.type ?? "").trim());
+}
+
 export function normalizeRollMode({ rollMode = "normal", advantage = false } = {}) {
   if (advantage) return "advantage";
 
@@ -78,19 +94,6 @@ export function getCompendiumRewardId(definitionId, entry) {
   return [definitionId, packId, documentId].map(encodeRewardIdPart).join(":");
 }
 
-export function chooseWeightedRarity(definitions, random = Math.random) {
-  const totalWeight = definitions.reduce((sum, entry) => sum + entry.weight, 0);
-  if (totalWeight <= 0) return null;
-
-  let remaining = random() * totalWeight;
-  for (const entry of definitions) {
-    remaining -= entry.weight;
-    if (remaining <= 0) return entry;
-  }
-
-  return definitions.at(-1) ?? null;
-}
-
 export function buildRarityPools(pooledDocuments, definitions = []) {
   const rarityPools = Object.fromEntries(definitions.map((entry) => [entry.id, []]));
 
@@ -105,10 +108,6 @@ export function buildRarityPools(pooledDocuments, definitions = []) {
   return rarityPools;
 }
 
-export function getAffordableRarities(remainingPoints, rarityPools, definitions = []) {
-  return definitions.filter((entry) => entry.cost <= remainingPoints && rarityPools[entry.id]?.length);
-}
-
 export function normalizeCompendiumIndex(index) {
   if (Array.isArray(index)) return [...index];
 
@@ -120,4 +119,30 @@ export function normalizeCompendiumIndex(index) {
   }
 
   return Array.from(index ?? []);
+}
+
+function getMaxBracketLootPoints(lootPointBrackets) {
+  return (Array.isArray(lootPointBrackets) ? lootPointBrackets : [])
+    .reduce((max, bracket) => Math.max(max, Number(bracket?.lootPoints) || 0), 0);
+}
+
+// Result wording scales with the highest Loot Points the GM's brackets can award.
+// With the default brackets (max 10 LP) the limits stay at 3 and 6 LP, as before.
+export function getLootResultTier(lootPoints, lootPointBrackets) {
+  const points = Number(lootPoints) || 0;
+  if (points <= 0) return "none";
+  const maxPoints = getMaxBracketLootPoints(lootPointBrackets);
+  if (points <= maxPoints * 0.3) return "some";
+  if (points <= maxPoints * 0.6) return "good";
+  return "rich";
+}
+
+// Result colour: high from 60% of the maximum Loot Points, medium from 20% (6 and 2 LP by default).
+export function getLootResultTone(lootPoints, lootPointBrackets) {
+  const points = Number(lootPoints) || 0;
+  const maxPoints = getMaxBracketLootPoints(lootPointBrackets);
+  if (points <= 0 || maxPoints <= 0) return "low";
+  if (points >= maxPoints * 0.6) return "high";
+  if (points >= maxPoints * 0.2) return "mid";
+  return "low";
 }
