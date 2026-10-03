@@ -1,5 +1,5 @@
 import { MODULE_ID, RESOURCES_FLAG, SEARCH_LOG_FLAG } from "../constants.js";
-import { getManagedInventoryResources, grantRewardsToActorInventory } from "./inventory-store.js";
+import { grantRewardsToActorInventory } from "./inventory-store.js";
 import { getRewardStackKey } from "./inventory-stacking-core.js";
 import { getRewardDisplayName } from "./reward-utils.js";
 import {
@@ -12,13 +12,39 @@ export function getActorResources(actor) {
   return foundry.utils.deepClone(actor.getFlag(MODULE_ID, RESOURCES_FLAG) ?? {});
 }
 
-export function getActorResourceList(actor) {
-  const fallbackResources = Object.values(getActorResources(actor)).map((entry) => ({
-    ...entry,
-    type: "fallback"
-  }));
-  const inventoryResources = getManagedInventoryResources(actor);
-  return [...inventoryResources, ...fallbackResources].sort((left, right) => left.name.localeCompare(right.name, "pl"));
+// Stack keys contain dots (compendium UUIDs) and Foundry expands dotted keys when a
+// document is updated, so fallback entries live at nested paths inside the flag.
+// Read, write and delete them by path so every operation hits the same place.
+function getStoredResource(resources, key) {
+  if (!key) return undefined;
+  const value = foundry.utils.getProperty(resources, key);
+  return value && typeof value === "object" ? value : undefined;
+}
+
+function isEmptyBranch(value) {
+  if (!value || typeof value !== "object") return false;
+  return Object.values(value).every(isEmptyBranch);
+}
+
+async function removeStoredResource(actor, resources, key) {
+  const segments = String(key ?? "").split(".");
+  const parent = segments.length > 1
+    ? foundry.utils.getProperty(resources, segments.slice(0, -1).join("."))
+    : resources;
+  if (parent && typeof parent === "object") delete parent[segments.at(-1)];
+
+  // Remove the shortest ancestor left empty, so no hollow objects stay behind.
+  let targetPath = segments.join(".");
+  for (let length = 1; length < segments.length; length += 1) {
+    const prefix = segments.slice(0, length).join(".");
+    if (isEmptyBranch(foundry.utils.getProperty(resources, prefix))) {
+      targetPath = prefix;
+      break;
+    }
+  }
+
+  // setFlag merges objects and cannot drop keys; unsetFlag is the documented way.
+  await actor.unsetFlag(MODULE_ID, `${RESOURCES_FLAG}.${targetPath}`);
 }
 
 export async function addRewardsToActor(actor, rewards, { containerId = "" } = {}) {
@@ -40,20 +66,16 @@ export async function addRewardsToActor(actor, rewards, { containerId = "" } = {
 
   if (summary.inventory.length) {
     const resources = getActorResources(actor);
-    let changed = false;
+    const removedKeys = new Set();
 
     for (const { reward } of summary.inventory) {
       if (!reward) continue;
       const stackKey = getRewardStackKey(reward);
       for (const storedKey of new Set([stackKey, String(reward.id ?? "").trim()])) {
-        if (!storedKey || !resources[storedKey]) continue;
-        delete resources[storedKey];
-        changed = true;
+        if (!storedKey || removedKeys.has(storedKey) || !getStoredResource(resources, storedKey)) continue;
+        removedKeys.add(storedKey);
+        await removeStoredResource(actor, resources, storedKey);
       }
-    }
-
-    if (changed) {
-      await actor.setFlag(MODULE_ID, RESOURCES_FLAG, resources);
     }
   }
 
@@ -62,26 +84,41 @@ export async function addRewardsToActor(actor, rewards, { containerId = "" } = {
   }
 
   const resources = getActorResources(actor);
+  const updates = {};
+  const legacyKeysToRemove = new Set();
 
   for (const { reward } of inventorySummary.failed) {
     const stackKey = getRewardStackKey(reward);
     if (!stackKey) continue;
     const legacyKey = String(reward.id ?? "").trim();
-    const existing = resources[stackKey] ?? resources[legacyKey] ?? {
-      id: reward.id,
-      stackKey,
-      name: getRewardDisplayName(reward),
-      quantity: 0
-    };
+    const existing = foundry.utils.deepClone(
+      getStoredResource(resources, stackKey)
+      ?? (legacyKey ? getStoredResource(resources, legacyKey) : undefined)
+      ?? {
+        id: reward.id,
+        stackKey,
+        name: getRewardDisplayName(reward),
+        quantity: 0
+      }
+    );
 
-    if (legacyKey && legacyKey !== stackKey) delete resources[legacyKey];
+    if (legacyKey && legacyKey !== stackKey && getStoredResource(resources, legacyKey)) {
+      legacyKeysToRemove.add(legacyKey);
+    }
     existing.stackKey = stackKey;
     existing.name = getRewardDisplayName(reward);
     existing.quantity = Number(existing.quantity ?? 0) + Number(reward.quantity ?? 0);
-    resources[stackKey] = existing;
+    foundry.utils.setProperty(resources, stackKey, existing);
+    updates[`flags.${MODULE_ID}.${RESOURCES_FLAG}.${stackKey}`] = existing;
   }
 
-  await actor.setFlag(MODULE_ID, RESOURCES_FLAG, resources);
+  if (Object.keys(updates).length) {
+    await actor.update(updates);
+  }
+  for (const legacyKey of legacyKeysToRemove) {
+    await removeStoredResource(actor, getActorResources(actor), legacyKey);
+  }
+
   summary.fallback = inventorySummary.failed.map(({ reward }) => ({
     mode: "fallback",
     quantity: reward.quantity,

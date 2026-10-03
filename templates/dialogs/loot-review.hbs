@@ -1,0 +1,27 @@
+<div class="wildharvest-dialog wildharvest-loot-review">
+  <p class="wildharvest-loot-review__lead">{{lead}}</p>
+  {{#if summary}}<p class="wildharvest-loot-review__summary" data-review-summary aria-live="polite">{{summary}}</p>{{/if}}
+  {{#if toleranceNote}}<p class="wildharvest-loot-review__tolerance" role="note"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> {{toleranceNote}}</p>{{/if}}
+  {{#if rewards.length}}
+  <div class="wildharvest-loot-review__tools" role="group" aria-label="{{labels.selection}}">
+    <button type="button" class="button" data-review-select="all">{{labels.selectAll}}</button>
+    <button type="button" class="button" data-review-select="none">{{labels.selectNone}}</button>
+    <span class="wildharvest-loot-review__count" data-review-count aria-live="polite">{{selectedText}}</span>
+  </div>
+  <ul class="wildharvest-loot-review__list">
+    {{#each rewards}}
+    <li>
+      <label class="wildharvest-loot-review__item">
+        <input type="checkbox" class="wh-check" name="keep" value="{{index}}" data-stack-value="{{stackValue}}" checked>
+        <img src="{{img}}" alt="">
+        <span class="wildharvest-loot-review__name">{{name}}{{#if unitValue}} <small>{{unitValue}}</small>{{/if}}</span>
+        <span class="wildharvest-loot-review__quantity">x{{quantity}}</span>
+      </label>
+    </li>
+    {{/each}}
+  </ul>
+  {{else}}
+  <p class="wildharvest-empty">{{labels.noItems}}</p>
+  {{/if}}
+  <p class="notes">{{labels.closeHint}}</p>
+</div>

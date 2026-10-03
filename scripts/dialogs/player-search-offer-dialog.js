@@ -1,73 +1,65 @@
 import { getActivitySkillLabel } from "../helpers/dnd5e-support.js";
+import { notifyError } from "../helpers/notification-utils.js";
+import { renderModuleTemplate } from "../helpers/templates.js";
 import { t } from "../i18n.js";
 import {
   addWindowClasses,
-  escapeHtml,
   focusDialogControl
 } from "./dialog-utils.js";
 
 const DialogV2 = foundry.applications.api.DialogV2;
-const PLAYER_OFFER_ASSETS = Object.freeze({
-  wildharvest: "modules/wildharvest/assets/ui/icons/icon-wildharvest.svg",
-  skill: "modules/wildharvest/assets/ui/icons/icon-skill.svg"
+// Font Awesome classes (bundled with Foundry).
+const PLAYER_OFFER_ICONS = Object.freeze({
+  wildharvest: "fa-solid fa-seedling",
+  skill: "fa-solid fa-graduation-cap"
 });
 
-function renderPlayerOfferSummary(activity) {
+function renderPlayerOffer(activity) {
   const skillLabel = getActivitySkillLabel(activity) || activity.skillLabel;
   const description = String(activity.description ?? "").trim() || t("WILDHARVEST.Dialog.Offer.ScenePrompt");
-  return `
-    <div class="wildharvest-player-offer-summary">
-      <div class="wildharvest-player-hero">
-        <div class="wildharvest-player-hero__emblem wildharvest-player-hero__emblem--image">
-          <img class="wildharvest-player-hero__asset" src="${escapeHtml(PLAYER_OFFER_ASSETS.wildharvest)}" alt="">
-        </div>
-        <div class="wildharvest-player-hero__copy">
-          <h2>${escapeHtml(t("WILDHARVEST.Dialog.Offer.SceneTitle"))}</h2>
-          <p>${escapeHtml(activity.name)}</p>
-          <div class="wildharvest-player-hero__divider" aria-hidden="true"></div>
-        </div>
-      </div>
-      <section class="wildharvest-player-card wildharvest-player-card--offer-details">
-        <div class="wildharvest-player-section-title">
-          <span class="wildharvest-player-section-title__badge">
-            <img class="wildharvest-player-section-title__asset" src="${escapeHtml(PLAYER_OFFER_ASSETS.skill)}" alt="">
-          </span>
-          <span>${escapeHtml(t("WILDHARVEST.Dialog.Offer.Skill"))}</span>
-        </div>
-        <p class="wildharvest-player-offer__skill-check">${escapeHtml(t("WILDHARVEST.Dialog.Common.SkillCheck", { skillLabel }))}</p>
-        <p class="wildharvest-player-copy">${escapeHtml(description)}</p>
-      </section>
-    </div>
-  `;
+  return renderModuleTemplate("wildharvest.playerOffer", {
+    prompt: t("WILDHARVEST.Dialog.Offer.Prompt"),
+    icons: PLAYER_OFFER_ICONS,
+    sceneTitle: t("WILDHARVEST.Dialog.Offer.SceneTitle"),
+    activityName: activity.name,
+    skillCheck: t("WILDHARVEST.Dialog.Common.SkillCheck", { skillLabel }),
+    description
+  });
+}
+
+async function runOfferAction(action, dialog) {
+  if (typeof action !== "function") return;
+  // closeOnSubmit is off, so the invitation stays open when the action fails.
+  // Errors are caught here because DialogV2 re-enables its buttons only after the callback returns.
+  let succeeded = false;
+  try {
+    succeeded = await action();
+  } catch (error) {
+    notifyError(error);
+  }
+  if (succeeded === true) await dialog.close();
 }
 
 export function openPlayerSearchOfferDialog({ activity, onAccept, onDecline, onClose }) {
   const dialog = new DialogV2({
+    form: { closeOnSubmit: false },
     window: {
-      title: t("WILDHARVEST.Title")
+      // W-8 (1.32.0): the window says what it is, instead of the module name only.
+      title: t("WILDHARVEST.Dialog.Offer.WindowTitle", { activityName: activity.name })
     },
-    content: `
-      <div class="wildharvest-dialog wildharvest-player-layout wildharvest-player-layout--invite">
-        <section class="wildharvest-player-copy wildharvest-player-copy--lead">
-          ${escapeHtml(t("WILDHARVEST.Dialog.Offer.Prompt"))}
-        </section>
-        <section class="wildharvest-preview wildharvest-preview--player-offer">
-          ${renderPlayerOfferSummary(activity)}
-        </section>
-      </div>
-    `,
+    content: renderPlayerOffer(activity),
     buttons: [
       {
         action: "accept",
         label: t("WILDHARVEST.Dialog.Offer.Accept"),
         icon: "fa-solid fa-magnifying-glass",
         default: true,
-        callback: onAccept
+        callback: (_event, _button, instance) => runOfferAction(onAccept, instance)
       },
       {
         action: "decline",
         label: t("WILDHARVEST.Dialog.Offer.Decline"),
-        callback: onDecline
+        callback: (_event, _button, instance) => runOfferAction(onDecline, instance)
       }
     ],
     rejectClose: false

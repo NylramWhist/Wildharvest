@@ -1,0 +1,55 @@
+<div class="wildharvest-dialog wildharvest-dialog--wide">
+  <section class="wildharvest-gm-card">
+    <div class="wildharvest-gm-card__header">
+      <div>
+        <h3>{{presetName}}</h3>
+        <p>{{labels.hint}}</p>
+        {{#if labels.limitNote}}<p>{{labels.limitNote}}</p>{{/if}}
+      </div>
+    </div>
+    <div class="wildharvest-player-metrics">
+      <div class="wildharvest-player-metric">
+        <span>{{labels.source}}</span>
+        <strong>{{sourceLabel}}</strong>
+      </div>
+      <div class="wildharvest-player-metric">
+        <span>{{labels.itemCount}}</span>
+        <strong>{{totalItems}}</strong>
+      </div>
+    </div>
+  </section>
+  <section class="wildharvest-gm-card">
+    <div class="wildharvest-gm-card__header">
+      <div>
+        <h3>{{labels.breakdown}}</h3>
+      </div>
+    </div>
+    <div class="wildharvest-gm-stat-grid">
+      {{#each breakdown}}
+      <article class="wildharvest-gm-stat">
+        <strong>{{value}}</strong>
+        <span>{{label}}</span>
+      </article>
+      {{/each}}
+    </div>
+  </section>
+  <section class="wildharvest-gm-grid wildharvest-gm-grid--responses">
+    {{#each samples}}
+    <article class="wildharvest-gm-card wildharvest-gm-preview-reward-card">
+      <div class="wildharvest-gm-card__header">
+        <div>
+          <h3>{{title}}</h3>
+          <p>{{plan}}</p>
+          {{#if valueDetails}}<p>{{valueDetails}}</p>{{/if}}
+        </div>
+      </div>
+      <ul class="wildharvest-history">
+        {{#each rewards}}<li>{{this}}</li>
+        {{/each}}
+      </ul>
+    </article>
+    {{else}}
+    <p class="wildharvest-empty">{{@root.labels.empty}}</p>
+    {{/each}}
+  </section>
+</div>

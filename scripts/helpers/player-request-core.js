@@ -84,3 +84,48 @@ export function isValidPlayerDocumentRequest(request, {
 
   return false;
 }
+
+// 1.21.0: every request lives under its own key, flags.wildharvest.requests.<id>,
+// so a new request never merges with one the GM has not handled yet.
+export function isValidPlayerRequestKey(key) {
+  return typeof key === "string"
+    && key.length > 0
+    && key.length <= MAX_REQUEST_ID_LENGTH
+    && /^[A-Za-z0-9_-]+$/.test(key);
+}
+
+// Requests stored on a user, oldest first. Entries whose key does not match the
+// request id are returned too (marked keyMismatch) so the GM can reject and remove them.
+export function listStoredPlayerRequests(rawRequests) {
+  if (!rawRequests || typeof rawRequests !== "object" || Array.isArray(rawRequests)) return [];
+  return Object.entries(rawRequests)
+    .filter(([, request]) => request !== null && request !== undefined)
+    .map(([key, request]) => ({
+      key,
+      request,
+      keyMismatch: !isValidPlayerRequestKey(key) || String(request?.id ?? "") !== key
+    }))
+    .sort((left, right) => {
+      const leftTime = Number(left.request?.createdAt);
+      const rightTime = Number(right.request?.createdAt);
+      const safeLeft = Number.isFinite(leftTime) ? leftTime : 0;
+      const safeRight = Number.isFinite(rightTime) ? rightTime : 0;
+      return safeLeft - safeRight || left.key.localeCompare(right.key);
+    });
+}
+
+// Keys of the player's own requests that the GM can no longer accept (too old),
+// so the player can remove them before writing a new one.
+export function getExpiredPlayerRequestKeys(rawRequests, {
+  now = Date.now(),
+  maxAgeMs = MAX_REQUEST_AGE_MS
+} = {}) {
+  return listStoredPlayerRequests(rawRequests)
+    .filter(({ request }) => {
+      const createdAt = Number(request?.createdAt);
+      const age = Number(now) - createdAt;
+      // A negative age means the server restarted (serverTime counts from server start).
+      return !Number.isFinite(createdAt) || age > maxAgeMs || age < -30_000;
+    })
+    .map(({ key }) => key);
+}

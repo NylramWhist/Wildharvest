@@ -1,5 +1,10 @@
 import { MODULE_ID } from "../constants.js";
 import { DEFAULT_RULES_CONFIG } from "../data/default-rules.js";
+import {
+  MAX_VALUE_DISTINCT_ITEMS,
+  MAX_VALUE_MAX_TOTAL_ITEMS,
+  MIN_VALUE_MAX_TOTAL_ITEMS
+} from "../helpers/loot-engine-value-core.js";
 import { t } from "../i18n.js";
 import {
   getRulesConfig,
@@ -39,6 +44,61 @@ function getValueRows(formRules) {
   return formRules.valueRules.brackets.map((bracket, index) => ({ ...bracket, index }));
 }
 
+// Rows the GM added but left empty are ignored instead of being read as 0.
+function getFilledRows(rows) {
+  return Object.values(rows ?? {}).filter((row) => Object.values(row ?? {})
+    .some((value) => String(value ?? "").trim() !== ""));
+}
+
+function getRuleRowsBody(form, rowsKey) {
+  return form?.querySelector?.(`tbody[data-rule-rows="${rowsKey}"]`) ?? null;
+}
+
+function getNextRowIndex(body) {
+  let maxIndex = -1;
+  for (const input of body.querySelectorAll("input[name]")) {
+    const match = input.name.match(/\.(\d+)\.[^.]+$/);
+    if (match) maxIndex = Math.max(maxIndex, Number(match[1]));
+  }
+  return maxIndex + 1;
+}
+
+// New rows are copies of an existing row, so the markup stays defined in one place (the template).
+function appendRuleRow(body) {
+  const template = body.querySelector("tr");
+  if (!template) return null;
+  const nextIndex = getNextRowIndex(body);
+  const row = template.cloneNode(true);
+  for (const input of row.querySelectorAll("input[name]")) {
+    input.name = input.name.replace(/\.(\d+)\.([^.]+)$/, `.${nextIndex}.$2`);
+    input.value = "";
+  }
+  body.append(row);
+  return row;
+}
+
+function setRuleRows(body, entries, fieldNames) {
+  if (!body) return;
+  const rows = [...body.querySelectorAll("tr")];
+  for (const row of rows.slice(Math.max(1, entries.length))) row.remove();
+  while (body.querySelectorAll("tr").length < entries.length) appendRuleRow(body);
+
+  for (const [rowIndex, row] of [...body.querySelectorAll("tr")].entries()) {
+    const entry = entries[rowIndex] ?? {};
+    for (const field of fieldNames) {
+      const input = row.querySelector(`input[name$=".${field}"]`);
+      if (input) input.value = String(entry[field] ?? "");
+    }
+  }
+}
+
+function syncRemoveRowButtons(form) {
+  for (const body of form?.querySelectorAll?.("tbody[data-rule-rows]") ?? []) {
+    const buttons = body.querySelectorAll('[data-action="removeRuleRow"]');
+    for (const button of buttons) button.disabled = buttons.length <= 1;
+  }
+}
+
 export class RulesSettingsForm extends HandlebarsApplicationMixin(ApplicationV2) {
   static DEFAULT_OPTIONS = {
     id: `${MODULE_ID}-rules-settings`,
@@ -47,6 +107,10 @@ export class RulesSettingsForm extends HandlebarsApplicationMixin(ApplicationV2)
     form: {
       handler: RulesSettingsForm.onSubmitForm,
       closeOnSubmit: true
+    },
+    actions: {
+      addRuleRow: RulesSettingsForm.#onAddRuleRow,
+      removeRuleRow: RulesSettingsForm.#onRemoveRuleRow
     },
     position: {
       width: 760,
@@ -76,6 +140,11 @@ export class RulesSettingsForm extends HandlebarsApplicationMixin(ApplicationV2)
       rarityRules: getRarityRows(rulesConfig),
       valueRules: getValueRows(rulesConfig),
       tolerancePercent: rulesConfig.valueRules.tolerancePercent,
+      maxDistinctItems: rulesConfig.valueRules.maxDistinctItems,
+      maxDistinctItemsLimit: MAX_VALUE_DISTINCT_ITEMS,
+      maxTotalItems: rulesConfig.valueRules.maxTotalItems,
+      maxTotalItemsMin: MIN_VALUE_MAX_TOTAL_ITEMS,
+      maxTotalItemsMax: MAX_VALUE_MAX_TOTAL_ITEMS,
       labels: {
         activeModeTitle: t("WILDHARVEST.Setting.RulesMenu.ActiveModeTitle"),
         activeModeHint: t("WILDHARVEST.Setting.RulesMenu.ActiveModeHint"),
@@ -101,6 +170,16 @@ export class RulesSettingsForm extends HandlebarsApplicationMixin(ApplicationV2)
         valueLootPoints: t("WILDHARVEST.Setting.RulesMenu.ValueLootPoints"),
         targetGp: t("WILDHARVEST.Setting.RulesMenu.TargetGp"),
         tolerancePercent: t("WILDHARVEST.Setting.RulesMenu.TolerancePercent"),
+        maxDistinctItems: t("WILDHARVEST.Setting.RulesMenu.MaxDistinctItems"),
+        maxDistinctItemsHint: t("WILDHARVEST.Setting.RulesMenu.MaxDistinctItemsHint", { max: MAX_VALUE_DISTINCT_ITEMS }),
+        maxTotalItems: t("WILDHARVEST.Setting.RulesMenu.MaxTotalItems"),
+        maxTotalItemsHint: t("WILDHARVEST.Setting.RulesMenu.MaxTotalItemsHint", {
+          min: MIN_VALUE_MAX_TOTAL_ITEMS,
+          max: MAX_VALUE_MAX_TOTAL_ITEMS
+        }),
+        addRow: t("WILDHARVEST.Setting.RulesMenu.AddRow"),
+        removeRow: t("WILDHARVEST.Setting.RulesMenu.RemoveRow"),
+        rowActions: t("WILDHARVEST.Setting.RulesMenu.RowActions"),
         save: t("WILDHARVEST.Dialog.Config.Save"),
         resetDefaults: t("WILDHARVEST.Setting.RulesMenu.ResetDefaults")
       }
@@ -112,6 +191,24 @@ export class RulesSettingsForm extends HandlebarsApplicationMixin(ApplicationV2)
 
     const resetButton = this.element?.querySelector?.('[data-action="reset-defaults"]');
     resetButton?.addEventListener("click", this.#onResetDefaults.bind(this));
+    syncRemoveRowButtons(this.form);
+  }
+
+  static #onAddRuleRow(_event, target) {
+    const body = getRuleRowsBody(this.form, target?.dataset?.ruleRows);
+    const row = body ? appendRuleRow(body) : null;
+    syncRemoveRowButtons(this.form);
+    row?.querySelector("input")?.focus();
+  }
+
+  static #onRemoveRuleRow(_event, target) {
+    const row = target?.closest?.("tr");
+    const body = row?.parentElement;
+    if (!row || !body || body.querySelectorAll("tr").length <= 1) return;
+    const neighbour = row.nextElementSibling ?? row.previousElementSibling;
+    row.remove();
+    syncRemoveRowButtons(this.form);
+    neighbour?.querySelector('[data-action="removeRuleRow"]')?.focus();
   }
 
   #onResetDefaults(event) {
@@ -136,12 +233,11 @@ export class RulesSettingsForm extends HandlebarsApplicationMixin(ApplicationV2)
       allowRollModeSelectionInput.checked = DEFAULT_RULES_CONFIG.playerRollRules.allowRollModeSelection;
     }
 
-    for (const [index, bracket] of DEFAULT_RULES_CONFIG.lootPointBrackets.entries()) {
-      const minTotalInput = form.querySelector(`[name="lootPointBrackets.${index}.minTotal"]`);
-      const lootPointsInput = form.querySelector(`[name="lootPointBrackets.${index}.lootPoints"]`);
-      if (minTotalInput) minTotalInput.value = String(bracket.minTotal);
-      if (lootPointsInput) lootPointsInput.value = String(bracket.lootPoints);
-    }
+    setRuleRows(
+      getRuleRowsBody(form, "lootPointBrackets"),
+      DEFAULT_RULES_CONFIG.lootPointBrackets,
+      ["minTotal", "lootPoints"]
+    );
 
     for (const rarityRule of DEFAULT_RULES_CONFIG.rarityRules) {
       const costInput = form.querySelector(`[name="rarityRules.${rarityRule.id}.cost"]`);
@@ -154,12 +250,16 @@ export class RulesSettingsForm extends HandlebarsApplicationMixin(ApplicationV2)
 
     const toleranceInput = form.querySelector('[name="valueRules.tolerancePercent"]');
     if (toleranceInput) toleranceInput.value = String(DEFAULT_RULES_CONFIG.valueRules.tolerancePercent);
-    for (const [index, bracket] of DEFAULT_RULES_CONFIG.valueRules.brackets.entries()) {
-      const pointsInput = form.querySelector(`[name="valueRules.brackets.${index}.lootPoints"]`);
-      const targetInput = form.querySelector(`[name="valueRules.brackets.${index}.targetGp"]`);
-      if (pointsInput) pointsInput.value = String(bracket.lootPoints);
-      if (targetInput) targetInput.value = String(bracket.targetGp);
-    }
+    const distinctInput = form.querySelector('[name="valueRules.maxDistinctItems"]');
+    if (distinctInput) distinctInput.value = String(DEFAULT_RULES_CONFIG.valueRules.maxDistinctItems);
+    const totalItemsInput = form.querySelector('[name="valueRules.maxTotalItems"]');
+    if (totalItemsInput) totalItemsInput.value = String(DEFAULT_RULES_CONFIG.valueRules.maxTotalItems);
+    setRuleRows(
+      getRuleRowsBody(form, "valueBrackets"),
+      DEFAULT_RULES_CONFIG.valueRules.brackets,
+      ["lootPoints", "targetGp"]
+    );
+    syncRemoveRowButtons(form);
 
     ui.notifications?.info(t("WILDHARVEST.Notifications.RulesResetPreview"));
   }
@@ -173,14 +273,16 @@ export class RulesSettingsForm extends HandlebarsApplicationMixin(ApplicationV2)
         maxExtraModifier: expanded.playerRollRules?.maxExtraModifier,
         allowRollModeSelection: Boolean(expanded.playerRollRules?.allowRollModeSelection)
       },
-      lootPointBrackets: Object.values(expanded.lootPointBrackets ?? {}),
+      lootPointBrackets: getFilledRows(expanded.lootPointBrackets),
       rarityRules: DEFAULT_RULES_CONFIG.rarityRules.map((rule) => ({
         id: rule.id,
         ...(expanded.rarityRules?.[rule.id] ?? {})
       })),
       valueRules: {
         tolerancePercent: expanded.valueRules?.tolerancePercent,
-        brackets: Object.values(expanded.valueRules?.brackets ?? {})
+        maxDistinctItems: expanded.valueRules?.maxDistinctItems,
+        maxTotalItems: expanded.valueRules?.maxTotalItems,
+        brackets: getFilledRows(expanded.valueRules?.brackets)
       }
     });
 

@@ -1,0 +1,66 @@
+<section id="wildharvest-gm-tabpanel-{{tabId}}" class="wildharvest-gm-panel__body" role="tabpanel" aria-labelledby="wildharvest-gm-tab-{{tabId}}" tabindex="0"{{#unless active}} hidden{{/unless}}>
+  {{#if active}}
+  {{#if session}}
+  <section class="wildharvest-gm-grid wildharvest-gm-grid--responses">
+    <article class="wildharvest-gm-card wildharvest-gm-session-detail">
+      <div class="wildharvest-gm-card__header">
+        <div>
+          <h3>{{sessionName}}</h3>
+          <p>{{sessionDescription}}</p>
+        </div>
+        {{> wildharvest.gmSessionActions actions}}
+      </div>
+      <div class="wildharvest-gm-stat-grid">
+        {{#each stats}}
+        <article class="wildharvest-gm-stat {{className}}">
+          <strong>{{value}}</strong>
+          <span>{{label}}</span>
+        </article>
+        {{/each}}
+      </div>
+      {{> wildharvest.gmFilterButtons filters}}
+      {{> wildharvest.gmResponseList responses}}
+    </article>
+    <article class="wildharvest-gm-card">
+      <div class="wildharvest-gm-card__header">
+        <div>
+          <h3>{{localize "WILDHARVEST.Dialog.ControlPanel.SceneHistoryTitle"}}</h3>
+          <p>{{localize "WILDHARVEST.Dialog.ControlPanel.SceneHistoryHint"}}</p>
+        </div>
+      </div>
+      {{#if sessionGroups.length}}
+      <div class="wildharvest-gm-session-selector">
+        {{#each sessionGroups}}
+        <section class="wildharvest-gm-scene-day">
+          <h4 class="wildharvest-gm-scene-day__label">{{label}}</h4>
+          <ul class="wildharvest-gm-scene-day__list">
+            {{#each sessions}}
+            <li>
+              <button type="button" class="wildharvest-gm-session-chip{{#if active}} is-active{{/if}}{{#if closed}} is-closed{{/if}}" data-action="gm-select-session" data-session-id="{{id}}" aria-pressed="{{#if active}}true{{else}}false{{/if}}">
+                <strong class="wildharvest-gm-session-chip__name">{{name}}</strong>
+                <span class="wildharvest-gm-session-chip__progress">{{progress}} <small>{{localize "WILDHARVEST.Dialog.ControlPanel.Completed"}}</small></span>
+                <span class="wildharvest-gm-session-chip__meta">{{time}} • {{modeLabel}}</span>
+                <span class="wildharvest-gm-session-chip__state">{{stateLabel}}</span>
+              </button>
+            </li>
+            {{/each}}
+          </ul>
+        </section>
+        {{/each}}
+      </div>
+      {{/if}}
+    </article>
+  </section>
+  {{else}}
+  <section class="wildharvest-gm-card">
+    <div class="wildharvest-gm-card__header">
+      <div>
+        <h3>{{localize "WILDHARVEST.Dialog.ControlPanel.ResponsesTitle"}}</h3>
+        <p>{{localize "WILDHARVEST.Dialog.ControlPanel.ResponsesHint"}}</p>
+      </div>
+    </div>
+    <p class="wildharvest-empty">{{localize "WILDHARVEST.Dialog.Responses.Empty"}}</p>
+  </section>
+  {{/if}}
+  {{/if}}
+</section>

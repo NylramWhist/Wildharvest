@@ -100,3 +100,45 @@ export function getActorSkillModifier(actor, activity) {
     ?? foundry.utils.getProperty(actor, `system.skills.${skillId}.mod`);
   return Number.isFinite(Number(modifier)) ? Number(modifier) : null;
 }
+
+// 1.24.0 (D9): a skill check through the documented D&D5e roll process
+// (Actor5e#rollSkill(config, dialog, message)), so Reliable Talent, Halfling Lucky, roll bonuses
+// and advantage from active effects apply as on the character sheet. No dialog and no chat message:
+// Wildharvest shows the result itself. Returns null when the system cannot roll this skill.
+export async function rollDnd5eSkill(actor, skillId, { rollMode = "normal", extraModifier = 0 } = {}) {
+  if (!actor || !isDnd5eSystem() || typeof actor.rollSkill !== "function") return null;
+  if (!getSkillConfigEntry(skillId) || !actor.system?.skills?.[skillId]) return null;
+
+  const config = { skill: skillId };
+  // Only a player's choice is passed; otherwise the system's own advantage from effects stays in force.
+  if (rollMode === "advantage") config.advantage = true;
+  if (rollMode === "disadvantage") config.disadvantage = true;
+  const extra = Number(extraModifier) || 0;
+  if (extra) config.rolls = [{ parts: ["@wildharvestExtra"], data: { wildharvestExtra: extra } }];
+
+  let rolls = null;
+  try {
+    rolls = await actor.rollSkill(config, { configure: false }, { create: false });
+  } catch (error) {
+    // An error in the system or in another module's roll hook: the module rolls instead.
+    console.warn("wildharvest | D&D5e skill roll failed; using the module roll.", error);
+    return null;
+  }
+  const roll = Array.isArray(rolls) ? rolls[0] : null;
+  if (!roll || !Number.isFinite(Number(roll.total))) return null;
+  return roll;
+}
+
+// The d20 result after Reliable Talent / Halfling Lucky, the modifier the system added to it
+// (including rolled bonuses such as Bless) and the roll mode actually used, which can come from an effect.
+export function describeDnd5eSkillRoll(roll) {
+  const dieResult = Number(roll?.d20?.total ?? roll?.dice?.[0]?.total);
+  const total = Number(roll?.total ?? 0);
+  const rollMode = roll?.hasAdvantage ? "advantage" : roll?.hasDisadvantage ? "disadvantage" : "normal";
+  return {
+    total,
+    dieResult: Number.isFinite(dieResult) ? dieResult : null,
+    modifier: Number.isFinite(dieResult) ? total - dieResult : null,
+    rollMode
+  };
+}

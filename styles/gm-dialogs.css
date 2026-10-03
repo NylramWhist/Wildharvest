@@ -1,40 +1,12 @@
 /* Shared GM DialogV2 layout; Workbench tab overrides load afterwards. */
 
-.wildharvest-window--gm {
-  --wildharvest-gm-bg-window: rgba(8, 7, 12, 0.96);
-  --wildharvest-gm-bg-panel: rgba(18, 15, 24, 0.88);
-  --wildharvest-gm-bg-panel-alt: rgba(26, 22, 34, 0.72);
-  --wildharvest-gm-bg-input: rgba(20, 17, 25, 0.96);
-  --wildharvest-gm-border: rgba(190, 150, 86, 0.38);
-  --wildharvest-gm-border-soft: rgba(190, 150, 86, 0.22);
-  --wildharvest-gm-border-bright: rgba(230, 178, 92, 0.75);
-  --wildharvest-gm-text: #efe4cf;
-  --wildharvest-gm-text-muted: #b8a98e;
-  --wildharvest-gm-text-dim: #a69780;
-  --wildharvest-gm-accent: #d9aa55;
-  --wildharvest-gm-accent-bright: #f0c879;
-  --wildharvest-gm-accent-muted: #b86f42;
-  --wildharvest-gm-danger: #c76a53;
-  --wildharvest-gm-success: #91b96a;
-  --wildharvest-gm-warning: #d7a94d;
-  --wildharvest-gm-radius-sm: 6px;
-  --wildharvest-gm-radius-md: 10px;
-  --wildharvest-gm-radius-lg: 14px;
-  --wildharvest-gm-shadow-panel:
-    0 14px 40px rgba(0, 0, 0, 0.55),
-    inset 0 1px 0 rgba(255, 220, 160, 0.04);
-  --wildharvest-gm-glow:
-    0 0 12px rgba(217, 170, 85, 0.18),
-    0 0 28px rgba(184, 111, 66, 0.12);
-}
-
 .wildharvest-window--gm .window-content {
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
   background:
-    radial-gradient(circle at 18% 0%, rgba(217, 170, 85, 0.08), transparent 32%),
-    radial-gradient(circle at 80% 18%, rgba(70, 120, 150, 0.06), transparent 34%),
-    linear-gradient(180deg, rgba(16, 13, 22, 0.96), rgba(7, 6, 10, 0.98));
+    radial-gradient(circle at 18% 0%, color-mix(in srgb, var(--wh-accent) 8%, transparent), transparent 32%),
+    radial-gradient(circle at 80% 18%, color-mix(in srgb, var(--wh-info) 6%, transparent), transparent 34%),
+    linear-gradient(180deg, var(--wh-surface-1), var(--wh-surface-0));
   color: var(--wildharvest-gm-text);
   box-shadow: var(--wildharvest-gm-shadow-panel);
   overflow: hidden;
@@ -44,20 +16,20 @@
 .wildharvest-window--gm .dialog-content {
   min-height: 0;
   overflow: auto;
-  padding-right: 0.35rem;
+  padding-right: var(--wh-space-1);
 }
 
 .wildharvest-window--gm .dialog-content,
 .wildharvest-window--gm .window-content {
-  scrollbar-color: rgba(239, 183, 93, 0.5) rgba(255, 255, 255, 0.04);
+  scrollbar-color: color-mix(in srgb, var(--wh-accent-bright) 50%, transparent) color-mix(in srgb, var(--wh-text) 4%, transparent);
 }
 
 .wildharvest-window--gm .window-header {
-  padding: 0.8rem 1rem 0.9rem;
+  padding: var(--wh-space-3) var(--wh-space-4) var(--wh-space-4);
   border-bottom: 1px solid var(--wildharvest-gm-border-soft);
   background:
-    linear-gradient(90deg, transparent, rgba(217, 170, 85, 0.08), transparent),
-    linear-gradient(180deg, rgba(255, 220, 160, 0.04), transparent);
+    linear-gradient(90deg, transparent, color-mix(in srgb, var(--wh-accent) 8%, transparent), transparent),
+    linear-gradient(180deg, color-mix(in srgb, var(--wh-accent-bright) 4%, transparent), transparent);
 }
 
 .wildharvest-window--gm .window-title,
@@ -70,23 +42,23 @@
 
 .wildharvest-window--gm .window-title {
   text-shadow:
-    0 1px 0 rgba(0, 0, 0, 0.8),
-    0 0 18px rgba(217, 170, 85, 0.16);
+    0 1px 0 color-mix(in srgb, var(--wh-text-shadow-color) 80%, transparent),
+    0 0 18px color-mix(in srgb, var(--wh-accent) 16%, transparent);
 }
 
 .wildharvest-window--gm .button,
 .wildharvest-window--gm button {
   position: relative;
   min-height: 2.35rem;
-  padding: 0.55rem 0.95rem;
+  padding: var(--wh-space-2) var(--wh-space-4);
   border-radius: var(--wildharvest-gm-radius-sm);
   border: 1px solid var(--wildharvest-gm-border-soft);
   background:
-    linear-gradient(180deg, rgba(34, 28, 34, 0.95), rgba(14, 12, 18, 0.96));
+    linear-gradient(180deg, var(--wh-surface-2), var(--wh-surface-0));
   color: var(--wildharvest-gm-text);
   box-shadow:
-    inset 0 1px 0 rgba(255, 230, 180, 0.05);
-  transition: 140ms ease;
+    inset 0 1px 0 color-mix(in srgb, var(--wh-accent-bright) 5%, transparent);
+  transition: var(--wh-motion-fast) var(--wh-ease);
 }
 
 .wildharvest-window--gm .button:hover,
@@ -99,40 +71,40 @@
 .wildharvest-window--gm .button.default,
 .wildharvest-window--gm button.default,
 .wildharvest-window--gm [data-action="gm-send-launch"] {
-  color: #fff0c9;
+  color: var(--wh-accent-bright);
   border-color: var(--wildharvest-gm-border-bright);
   background:
-    radial-gradient(circle at 50% 0%, rgba(255, 207, 112, 0.24), transparent 45%),
-    linear-gradient(180deg, rgba(92, 57, 24, 0.94), rgba(38, 25, 17, 0.96));
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--wh-accent-bright) 24%, transparent), transparent 45%),
+    linear-gradient(180deg, color-mix(in srgb, var(--wh-accent) 32.9%, transparent), var(--wh-surface-2));
   box-shadow:
-    0 0 16px rgba(217, 170, 85, 0.18),
-    inset 0 1px 0 rgba(255, 230, 180, 0.12);
+    0 0 16px color-mix(in srgb, var(--wh-accent) 18%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--wh-accent-bright) 12%, transparent);
 }
 
 .wildharvest-window--gm .button.default:hover,
 .wildharvest-window--gm button.default:hover,
 .wildharvest-window--gm [data-action="gm-send-launch"]:hover {
   box-shadow:
-    0 0 22px rgba(217, 170, 85, 0.28),
-    inset 0 1px 0 rgba(255, 230, 180, 0.18);
+    0 0 22px color-mix(in srgb, var(--wh-accent) 28%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--wh-accent-bright) 18%, transparent);
 }
 
 .wildharvest-window--gm [data-action="gm-send-launch"] {
   width: 100%;
   min-height: 3rem;
-  font-size: 1.05rem;
-  margin-top: 0.2rem;
+  font-size: var(--wh-fs-md);
+  margin-top: var(--wh-space-1);
 }
 
 .wildharvest-window--gm .dialog-buttons {
   display: none;
   justify-content: flex-end;
-  gap: 0.75rem;
+  gap: var(--wh-space-3);
   flex: 0 0 auto;
-  padding-top: 0.2rem;
-  margin-top: 0.2rem;
-  border-top: 1px solid rgba(190, 150, 86, 0.16);
-  background: linear-gradient(180deg, rgba(12, 11, 18, 0.18), rgba(10, 9, 14, 0.4));
+  padding-top: var(--wh-space-1);
+  margin-top: var(--wh-space-1);
+  border-top: 1px solid color-mix(in srgb, var(--wh-accent) 16%, transparent);
+  background: linear-gradient(180deg, var(--wh-surface-0), var(--wh-surface-0));
 }
 
 .wildharvest-window--gm .dialog-buttons:empty {
@@ -148,13 +120,13 @@
 .wildharvest-window--gm [data-action="close"] {
   opacity: 0.74;
   color: var(--wildharvest-gm-text-muted);
-  border-color: rgba(190, 150, 86, 0.18);
-  background: linear-gradient(180deg, rgba(22, 19, 28, 0.86), rgba(11, 10, 15, 0.92));
+  border-color: color-mix(in srgb, var(--wh-accent) 18%, transparent);
+  background: linear-gradient(180deg, var(--wh-surface-1), var(--wh-surface-0));
 }
 
 .wildharvest-window--gm [data-action="close"]:hover {
   opacity: 1;
-  border-color: rgba(190, 150, 86, 0.32);
+  border-color: color-mix(in srgb, var(--wh-accent) 32%, transparent);
 }
 
 .wildharvest-window--gm input,
@@ -162,45 +134,41 @@
 .wildharvest-window--gm select {
   color: var(--wildharvest-gm-text);
   background:
-    linear-gradient(180deg, rgba(18, 15, 23, 0.96), rgba(10, 9, 14, 0.96));
+    linear-gradient(180deg, var(--wh-surface-1), var(--wh-surface-0));
   border: 1px solid var(--wildharvest-gm-border-soft);
   border-radius: var(--wildharvest-gm-radius-sm);
   box-shadow:
-    inset 0 1px 4px rgba(0, 0, 0, 0.55),
-    inset 0 1px 0 rgba(255, 230, 180, 0.03);
+    inset 0 1px 4px color-mix(in srgb, var(--wh-shadow-color) 55%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--wh-accent-bright) 3%, transparent);
 }
 
 .wildharvest-window--gm input:hover,
 .wildharvest-window--gm textarea:hover,
 .wildharvest-window--gm select:hover {
-  border-color: rgba(214, 166, 82, 0.42);
+  border-color: color-mix(in srgb, var(--wh-accent) 42%, transparent);
 }
 
 .wildharvest-window--gm input:focus,
 .wildharvest-window--gm textarea:focus,
 .wildharvest-window--gm select:focus {
-  outline: none;
+  /* A-4 (1.21.3): a solid outline instead of a faint glow, so the focused field is clearly visible. */
+  outline: 2px solid var(--wildharvest-gm-accent);
+  outline-offset: 1px;
   border-color: var(--wildharvest-gm-border-bright);
   box-shadow:
-    0 0 0 1px rgba(217, 170, 85, 0.18),
-    0 0 14px rgba(217, 170, 85, 0.14),
-    inset 0 1px 4px rgba(0, 0, 0, 0.6);
-}
-
-.wildharvest-window--gm .wildharvest-tag {
-  border-color: var(--wildharvest-gm-border-soft);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--wildharvest-gm-text);
+    0 0 0 1px color-mix(in srgb, var(--wh-accent) 18%, transparent),
+    0 0 14px color-mix(in srgb, var(--wh-accent) 14%, transparent),
+    inset 0 1px 4px color-mix(in srgb, var(--wh-shadow-color) 60%, transparent);
 }
 
 .wildharvest-gm-panel {
   grid-template-rows: auto auto minmax(0, 1fr) auto;
-  gap: 1.15rem;
+  gap: var(--wh-space-4);
   height: 100%;
   max-height: none;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-right: 0.35rem;
+  padding-right: var(--wh-space-1);
   scrollbar-gutter: stable;
 }
 
@@ -208,21 +176,21 @@
   display: flex;
   justify-content: space-between;
   align-items: start;
-  gap: 0.75rem;
+  gap: var(--wh-space-3);
 }
 
 .wildharvest-gm-panel__title {
   display: grid;
-  gap: 0.35rem;
+  gap: var(--wh-space-1);
 }
 
 .wildharvest-gm-panel__title h2 {
   display: inline-flex;
   align-items: center;
-  gap: 0.95rem;
+  gap: var(--wh-space-4);
   margin: 0;
-  font-size: 2.3rem;
-  line-height: 1.05;
+  font-size: var(--wh-fs-3xl);
+  line-height: var(--wh-lh-none);
   letter-spacing: 0.03em;
 }
 
@@ -231,7 +199,7 @@
   display: block;
   width: 7rem;
   height: 1px;
-  margin-top: 0.5rem;
+  margin-top: var(--wh-space-2);
   background: linear-gradient(90deg, var(--wildharvest-gm-accent), transparent);
   opacity: 0.65;
 }
@@ -239,7 +207,7 @@
 .wildharvest-gm-panel__title p {
   margin: 0;
   color: var(--wildharvest-gm-text-muted);
-  font-size: 0.83rem;
+  font-size: var(--wh-fs-sm);
 }
 
 .wildharvest-gm-panel__title-asset {
@@ -248,13 +216,13 @@
   flex: 0 0 auto;
   display: block;
   object-fit: contain;
-  filter: drop-shadow(0 0 10px rgba(217, 170, 85, 0.35));
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--wh-accent) 35%, transparent));
 }
 
 .wildharvest-gm-tabs {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.7rem;
+  gap: var(--wh-space-3);
 }
 
 .wildharvest-gm-tab {
@@ -262,39 +230,43 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.6rem;
+  gap: var(--wh-space-2);
   min-height: 3.15rem;
-  padding: 0.75rem 1rem;
+  padding: var(--wh-space-3) var(--wh-space-4);
   border-radius: var(--wildharvest-gm-radius-sm);
   border: 1px solid var(--wildharvest-gm-border-soft);
-  background: rgba(20, 17, 25, 0.74);
+  background: var(--wh-surface-1);
   color: var(--wildharvest-gm-text);
-  font-size: 1rem;
-  font-weight: 700;
-  transition: 140ms ease;
+  font-size: var(--wh-fs-md);
+  font-weight: var(--wh-fw-bold);
+  transition: var(--wh-motion-fast) var(--wh-ease);
 }
 
 .wildharvest-gm-tab__asset {
   width: 18px;
   height: 18px;
+  font-size: var(--wh-fs-lg);
   flex: 0 0 auto;
-  display: block;
-  object-fit: contain;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: var(--wh-lh-none);
+  color: var(--wildharvest-gm-accent, var(--wh-accent));
 }
 
 .wildharvest-gm-tab:hover {
   transform: translateY(-1px);
   border-color: var(--wildharvest-gm-border);
-  background: rgba(32, 27, 38, 0.82);
+  background: var(--wh-surface-2);
   color: var(--wildharvest-gm-accent-bright);
-  box-shadow: 0 0 12px rgba(214, 166, 82, 0.08);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--wh-accent) 8%, transparent);
 }
 
 .wildharvest-gm-tab.is-active {
   color: var(--wildharvest-gm-accent-bright);
   border-color: var(--wildharvest-gm-border-bright);
   background:
-    linear-gradient(180deg, rgba(217, 170, 85, 0.16), rgba(20, 17, 25, 0.86));
+    linear-gradient(180deg, color-mix(in srgb, var(--wh-accent) 16%, transparent), var(--wh-surface-1));
   box-shadow: var(--wildharvest-gm-glow);
 }
 
@@ -310,29 +282,13 @@
 
 .wildharvest-gm-panel__body {
   display: grid;
-  gap: 1rem;
+  gap: var(--wh-space-4);
   min-height: 0;
 }
 
 .wildharvest-gm-grid {
   display: grid;
-  gap: 1rem;
-}
-
-.wildharvest-gm-main-grid {
-  display: grid;
-  grid-template-columns: minmax(420px, 0.92fr) minmax(520px, 1.08fr);
-  gap: 1rem;
-  align-items: start;
-  min-height: 100%;
-}
-
-.wildharvest-gm-grid--launch {
-  grid-template-columns: 1fr;
-}
-
-.wildharvest-gm-grid--launch-secondary {
-  grid-template-columns: minmax(380px, 1.35fr) minmax(260px, 0.65fr);
+  gap: var(--wh-space-4);
 }
 
 .wildharvest-gm-grid--responses {
@@ -341,86 +297,77 @@
 
 .wildharvest-gm-card {
   display: grid;
-  gap: 1rem;
-  padding: 1.15rem;
+  gap: var(--wh-space-4);
+  padding: var(--wh-space-4);
   border-radius: var(--wildharvest-gm-radius-md);
   border: 1px solid var(--wildharvest-gm-border-soft);
   background:
-    radial-gradient(circle at top left, rgba(217, 170, 85, 0.06), transparent 34%),
-    linear-gradient(180deg, rgba(24, 20, 31, 0.88), rgba(11, 10, 16, 0.9));
+    radial-gradient(circle at top left, color-mix(in srgb, var(--wh-accent) 6%, transparent), transparent 34%),
+    linear-gradient(180deg, var(--wh-surface-1), var(--wh-surface-0));
   box-shadow:
-    inset 0 1px 0 rgba(255, 230, 180, 0.04),
-    0 8px 22px rgba(0, 0, 0, 0.26);
+    inset 0 1px 0 color-mix(in srgb, var(--wh-accent-bright) 4%, transparent),
+    0 8px 22px color-mix(in srgb, var(--wh-shadow-color) 26%, transparent);
 }
 
 .wildharvest-gm-card--primary,
 .wildharvest-gm-session-detail {
   border-color: var(--wildharvest-gm-border);
   box-shadow:
-    0 0 22px rgba(217, 170, 85, 0.08),
-    inset 0 1px 0 rgba(255, 230, 180, 0.05);
+    0 0 22px color-mix(in srgb, var(--wh-accent) 8%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--wh-accent-bright) 5%, transparent);
 }
 
 .wildharvest-gm-card--secondary {
-  border-color: rgba(214, 166, 82, 0.24);
+  border-color: color-mix(in srgb, var(--wh-accent) 24%, transparent);
   opacity: 0.96;
-}
-
-.wildharvest-gm-panel--has-live-session .wildharvest-gm-launch-card {
-  opacity: 0.92;
-}
-
-.wildharvest-gm-panel--has-live-session .wildharvest-gm-live-card {
-  border-color: rgba(217, 170, 85, 0.42);
-  box-shadow:
-    0 0 18px rgba(217, 170, 85, 0.08),
-    inset 0 1px 0 rgba(255, 230, 180, 0.06);
 }
 
 .wildharvest-gm-card__header {
   display: flex;
   justify-content: space-between;
   align-items: start;
-  gap: 0.85rem;
+  gap: var(--wh-space-3);
   flex-wrap: wrap;
 }
 
 .wildharvest-gm-card__header h3 {
   margin: 0;
-  font-size: 1.3rem;
-  line-height: 1.1;
+  font-size: var(--wh-fs-xl);
+  line-height: var(--wh-lh-tight);
 }
 
 .wildharvest-gm-card__header p,
-.wildharvest-gm-readonly,
-.wildharvest-gm-response-entry__meta {
+.wildharvest-gm-readonly {
   margin: 0;
   color: var(--wildharvest-gm-text-muted);
-  font-size: 0.84rem;
+  font-size: var(--wh-fs-sm);
 }
 
 .wildharvest-window--gm label {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  color: #c8b894;
-  font-size: 0.78rem;
-  font-weight: 800;
+  gap: var(--wh-space-2);
+  color: var(--wh-text-muted);
+  font-size: var(--wh-fs-xs);
+  font-weight: var(--wh-fw-heavy);
   letter-spacing: 0.03em;
 }
 
 .wildharvest-gm-label__asset,
 .wildharvest-gm-button__asset,
-.wildharvest-gm-status__asset,
-.wildharvest-gm-empty-state-card__asset {
+.wildharvest-gm-status__asset {
   flex: 0 0 auto;
-  display: block;
-  object-fit: contain;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: var(--wh-lh-none);
 }
 
 .wildharvest-gm-label__asset {
+  color: var(--wildharvest-gm-accent, var(--wh-accent));
   width: 15px;
   height: 15px;
+  font-size: var(--wh-fs-md);
 }
 
 .wildharvest-window--gm .button,
@@ -428,22 +375,24 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.45rem;
+  gap: var(--wh-space-2);
 }
 
 .wildharvest-gm-button__asset {
   width: 15px;
   height: 15px;
+  font-size: var(--wh-fs-md);
 }
 
 .wildharvest-window--gm [data-action="gm-send-launch"] .wildharvest-gm-button__asset {
   width: 18px;
   height: 18px;
+  font-size: var(--wh-fs-lg);
 }
 
 .wildharvest-gm-form {
   display: grid;
-  gap: 0.85rem;
+  gap: var(--wh-space-3);
 }
 
 .wildharvest-gm-launch-card {
@@ -454,18 +403,18 @@
 .wildharvest-gm-launch-form-shell {
   width: 100%;
   display: grid;
-  gap: 0.75rem;
+  gap: var(--wh-space-3);
 }
 
 .wildharvest-gm-form--launch {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem 0.9rem;
+  gap: var(--wh-space-3) var(--wh-space-4);
 }
 
 .wildharvest-gm-form--launch .form-group {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 0.35rem;
+  gap: var(--wh-space-1);
   align-content: start;
 }
 
@@ -475,49 +424,37 @@
 
 .wildharvest-gm-launch-actions {
   display: grid;
-  gap: 0.7rem;
+  gap: var(--wh-space-3);
 }
 
 .wildharvest-gm-validation {
   margin: 0;
-  padding: 0.85rem 1rem;
+  padding: var(--wh-space-3) var(--wh-space-4);
   border-radius: var(--wildharvest-gm-radius-sm);
 }
 
 .wildharvest-gm-validation p {
-  margin: 0 0 0.45rem;
-}
-
-.wildharvest-gm-validation--compact {
-  margin-top: 0.7rem;
+  margin: 0 0 var(--wh-space-2);
 }
 
 .wildharvest-gm-launch-secondary-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.65rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--wh-space-3);
 }
 
 .wildharvest-gm-launch-secondary-actions .button {
   width: 100%;
 }
 
-.wildharvest-window--gm .button[disabled] {
-  opacity: 0.58;
-  cursor: not-allowed;
-  pointer-events: none;
-  box-shadow: none;
-  filter: grayscale(0.2);
-}
-
 .wildharvest-gm-readonly {
   min-height: 2.75rem;
   display: flex;
   align-items: center;
-  padding: 0.75rem 0.85rem;
+  padding: var(--wh-space-3) var(--wh-space-3);
   border-radius: var(--wildharvest-gm-radius-sm);
   border: 1px solid var(--wildharvest-gm-border-soft);
-  background: rgba(19, 18, 25, 0.66);
+  background: var(--wh-surface-1);
 }
 
 .wildharvest-gm-readonly--scroll {
@@ -526,83 +463,19 @@
   overflow: auto;
   white-space: normal;
   overflow-wrap: anywhere;
-  line-height: 1.5;
+  line-height: var(--wh-lh-relaxed);
   scrollbar-gutter: stable;
 }
 
 .wildharvest-gm-readonly--multiline {
   align-items: start;
   min-height: 6rem;
-  line-height: 1.5;
-}
-
-.wildharvest-gm-active-scene {
-  display: grid;
-  grid-template-columns: 52px minmax(0, 1fr) auto;
-  gap: 0.9rem;
-  align-items: center;
-  padding: 0.95rem 1rem;
-  border-radius: var(--wildharvest-gm-radius-md);
-  border: 1px solid rgba(217, 170, 85, 0.22);
-  background:
-    radial-gradient(circle at 8% 50%, rgba(217, 170, 85, 0.08), transparent 34%),
-    rgba(8, 7, 12, 0.42);
-}
-
-.wildharvest-gm-active-scene--empty {
-  grid-template-columns: 52px minmax(0, 1fr);
-}
-
-.wildharvest-gm-active-scene__aside {
-  display: grid;
-  justify-items: end;
-  gap: 0.6rem;
-}
-
-.wildharvest-gm-active-scene__icon {
-  width: 52px;
-  height: 52px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  border: 1px solid rgba(217, 170, 85, 0.24);
-  background: rgba(217, 170, 85, 0.08);
-  box-shadow: 0 0 16px rgba(217, 170, 85, 0.12);
-}
-
-.wildharvest-gm-active-scene__asset {
-  width: 24px;
-  height: 24px;
-}
-
-.wildharvest-gm-active-scene__content {
-  display: grid;
-  gap: 0.2rem;
-}
-
-.wildharvest-gm-active-scene__content h4,
-.wildharvest-gm-active-scene__content p,
-.wildharvest-gm-active-scene__content strong {
-  margin: 0;
-}
-
-.wildharvest-gm-active-scene__content h4 {
-  font-size: 0.95rem;
-}
-
-.wildharvest-gm-active-scene__content strong {
-  color: var(--wildharvest-gm-text);
-  font-size: 1rem;
-}
-
-.wildharvest-gm-active-scene__content p {
-  color: var(--wildharvest-gm-text-muted);
-  font-size: 0.8rem;
+  line-height: var(--wh-lh-relaxed);
 }
 
 .wildharvest-gm-session-actions {
   flex-wrap: wrap;
-  row-gap: 0.45rem;
+  row-gap: var(--wh-space-2);
 }
 
 .wildharvest-gm-session-actions .button {
@@ -611,9 +484,9 @@
 
 .wildharvest-gm-empty-state {
   display: grid;
-  gap: 0.85rem;
+  gap: var(--wh-space-3);
   place-items: start;
-  padding: 1rem 0.1rem;
+  padding: var(--wh-space-4) var(--wh-space-0);
 }
 
 .wildharvest-gm-empty-state-card {
@@ -621,20 +494,18 @@
   display: grid;
   place-items: center;
   align-content: center;
-  gap: 0.45rem;
+  gap: var(--wh-space-2);
   text-align: center;
   color: var(--wildharvest-gm-text-muted);
-  border: 1px dashed rgba(214, 166, 82, 0.18);
+  border: var(--wh-empty-border);
   border-radius: var(--wildharvest-gm-radius-md);
-  background:
-    radial-gradient(circle at center, rgba(214, 166, 82, 0.05), transparent 42%),
-    rgba(0, 0, 0, 0.14);
-  padding: 1rem;
+  background: var(--wh-empty-bg);
+  padding: var(--wh-space-4);
 }
 
 .wildharvest-gm-empty-state-card--compact {
   min-height: 6.25rem;
-  padding: 0.85rem 1rem;
+  padding: var(--wh-space-3) var(--wh-space-4);
 }
 
 .wildharvest-gm-empty-state-card strong {
@@ -647,11 +518,11 @@
 }
 
 .wildharvest-gm-empty-state-card__asset {
-  width: 38px;
-  height: 38px;
-  margin-bottom: 12px;
+  --wh-icon-size: 2.375rem;
+  margin-bottom: var(--wh-space-3);
   opacity: 0.78;
-  filter: drop-shadow(0 0 8px rgba(217, 170, 85, 0.22));
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--wh-accent) 22%, transparent));
+  color: var(--wildharvest-gm-accent, var(--wh-accent));
 }
 
 .wildharvest-gm-empty-state h3,
@@ -663,25 +534,38 @@
 .wildharvest-gm-compendium-list,
 .wildharvest-gm-response-list {
   display: grid;
-  gap: 0.6rem;
+  gap: var(--wh-space-2);
 }
 
 .wildharvest-gm-recipient,
 .wildharvest-gm-compendium-option {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 0.75rem;
+  gap: var(--wh-space-3);
   align-items: start;
-  padding: 0.75rem 0.8rem;
-  border-radius: 12px;
+  padding: var(--wh-space-3) var(--wh-space-3);
+  border-radius: var(--wh-radius-lg);
   border: 1px solid var(--wildharvest-gm-border-soft);
-  background: rgba(18, 17, 25, 0.42);
+  background: var(--wh-surface-1);
 }
 
 .wildharvest-gm-recipient span,
 .wildharvest-gm-compendium-option span {
   display: grid;
-  gap: 0.15rem;
+  gap: var(--wh-space-0);
+}
+
+/* 1.37.3: the plain `label` rule of the window (inline-flex, centred) is stronger than the card rule above. The
+   cards are grids again with the tick box at the top, level with the first line of text (see .wh-check). */
+.wildharvest-window--gm .wildharvest-gm-recipient,
+.wildharvest-window--gm .wildharvest-gm-compendium-option {
+  display: grid;
+  gap: var(--wh-space-3);
+  align-items: start;
+}
+
+.wildharvest-window--gm :is(.wildharvest-gm-recipient, .wildharvest-gm-compendium-option) > span {
+  padding-top: 0.155rem;
 }
 
 .wildharvest-gm-recipient small,
@@ -689,83 +573,64 @@
   color: var(--wildharvest-gm-text-muted);
 }
 
-.wildharvest-gm-progress {
+.wildharvest-gm-compendium-option.is-not-lootable {
+  border-style: dashed;
+}
+
+.wildharvest-gm-compendium-option small.wildharvest-gm-compendium-warning {
+  color: var(--wildharvest-gm-warning);
+}
+
+/* 1.37.0: compendium folders in the preset editor, indented by their depth. */
+.wildharvest-gm-folder-group {
   display: grid;
-  gap: 0.15rem;
-  justify-items: end;
-  color: var(--wildharvest-gm-text-muted);
-  text-align: right;
+  gap: var(--wh-space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
 }
 
-.wildharvest-gm-progress strong {
-  color: var(--wildharvest-gm-accent-bright);
-  font-size: 1.4rem;
+.wildharvest-gm-folder-group + .wildharvest-gm-folder-group {
+  margin-top: var(--wh-space-3);
 }
 
-.wildharvest-gm-progress--badge {
-  min-width: 4.8rem;
-  padding: 0.6rem 0.75rem;
-  border-radius: var(--wildharvest-gm-radius-sm);
-  border: 1px solid rgba(217, 170, 85, 0.35);
-  background: rgba(217, 170, 85, 0.08);
+.wildharvest-gm-folder-group__title {
+  margin: 0 0 var(--wh-space-2);
+  padding: 0;
+  font-weight: var(--wh-fw-semibold);
 }
 
-.wildharvest-gm-progress__count {
-  font-size: 1.35rem;
-  line-height: 1;
+.wildharvest-gm-folder-list {
+  gap: var(--wh-space-1);
 }
 
-.wildharvest-gm-progress__label {
-  margin-top: 0.1rem;
-  font-size: 0.75rem;
-}
-
-.wildharvest-gm-live-card {
-  align-content: start;
-  min-height: 100%;
-  height: 100%;
-}
-
-.wildharvest-gm-live-card .wildharvest-gm-response-list {
-  max-height: 32rem;
-  overflow: auto;
-  padding-right: 0.35rem;
-}
-
-.wildharvest-gm-live-summary {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+.wildharvest-gm-folder-option {
   align-items: center;
-  gap: 0.85rem 1rem;
-  padding: 0.9rem 1rem;
-  border-radius: var(--wildharvest-gm-radius-md);
-  border: 1px solid var(--wildharvest-gm-border-soft);
-  background: rgba(10, 9, 14, 0.46);
+  padding: var(--wh-space-2) var(--wh-space-3);
+  margin-inline-start: calc(var(--wh-folder-depth, 0) * 1.25rem);
 }
 
-.wildharvest-gm-live-summary__scene {
-  display: grid;
-  gap: 0.2rem;
+/* 1.37.1: a long folder tree scrolls inside the editor instead of stretching the window. */
+[data-folder-selection] {
+  max-height: 16rem;
+  overflow-y: auto;
+  padding-inline-end: var(--wh-space-1);
 }
 
-.wildharvest-gm-live-summary__scene strong,
-.wildharvest-gm-live-summary__scene p,
-.wildharvest-gm-live-summary__meta {
-  margin: 0;
+.wildharvest-gm-folder-option.is-included {
+  border-style: dotted;
 }
 
-.wildharvest-gm-live-summary p,
-.wildharvest-gm-live-summary__meta,
-.wildharvest-gm-live-more {
-  margin: 0;
-  color: var(--wildharvest-gm-text-muted);
+.wildharvest-gm-compendium-option small.wildharvest-gm-folder-included {
+  font-style: italic;
 }
 
 .wildharvest-gm-live-filters {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 0.45rem;
+  gap: var(--wh-space-2);
 }
 
 .wildharvest-gm-live-filters--left {
@@ -774,71 +639,53 @@
 
 .wildharvest-gm-live-filters .button {
   min-height: 2rem;
-  padding-inline: 0.8rem;
-  border-radius: 999px;
-  border-color: rgba(217, 170, 85, 0.22);
-  background: rgba(12, 10, 16, 0.72);
-  color: #d7c5a5;
+  padding-inline: var(--wh-space-3);
+  border-radius: var(--wh-radius-pill);
+  border-color: color-mix(in srgb, var(--wh-accent) 22%, transparent);
+  background: var(--wh-surface-0);
+  color: var(--wh-text-muted);
 }
 
 .wildharvest-gm-live-filters .button.is-active {
-  border-color: rgba(240, 200, 120, 0.68);
-  color: #f0c879;
-  background: rgba(217, 170, 85, 0.1);
+  border-color: color-mix(in srgb, var(--wh-accent-bright) 68%, transparent);
+  color: var(--wh-accent-bright);
+  background: color-mix(in srgb, var(--wh-accent) 10%, transparent);
 }
 
 .wildharvest-gm-session-detail .wildharvest-gm-response-list {
   max-height: 38rem;
   overflow: auto;
-  padding-right: 0.35rem;
-}
-
-.wildharvest-gm-live-card .wildharvest-gm-session-actions {
-  margin-left: auto;
-}
-
-.wildharvest-gm-live-more {
-  font-size: 0.9rem;
-}
-
-.wildharvest-card__meta--scroll {
-  max-height: 3.5rem;
-  overflow: auto;
-  padding-right: 0.2rem;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  line-height: 1.5;
-  scrollbar-gutter: stable;
+  padding-right: var(--wh-space-1);
 }
 
 .wildharvest-gm-stat-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.65rem;
+  gap: var(--wh-space-3);
 }
 
 .wildharvest-gm-stat {
   display: grid;
-  gap: 0.25rem;
+  gap: var(--wh-space-1);
   justify-items: center;
   align-content: center;
   min-height: 5.25rem;
-  padding: 0.75rem;
+  padding: var(--wh-space-3);
   border-radius: var(--wildharvest-gm-radius-md);
   border: 1px solid var(--wildharvest-gm-border-soft);
-  background: rgba(17, 16, 24, 0.44);
+  background: var(--wh-surface-1);
   text-align: center;
 }
 
 .wildharvest-gm-stat strong {
   color: var(--wildharvest-gm-accent-bright);
-  font-size: 1.75rem;
-  line-height: 1;
+  font-size: var(--wh-fs-3xl);
+  line-height: var(--wh-lh-none);
 }
 
 .wildharvest-gm-stat span {
   color: var(--wildharvest-gm-text-muted);
-  font-size: 0.88rem;
+  font-size: var(--wh-fs-sm);
 }
 
 .wildharvest-gm-stat.is-completed strong {
@@ -854,67 +701,69 @@
   color: var(--wildharvest-gm-text-dim);
 }
 
-.wildharvest-gm-session-card {
-  gap: 1rem;
-}
-
 .wildharvest-gm-session-detail {
   align-content: start;
 }
 
 .wildharvest-gm-session-selector {
   display: grid;
-  gap: 0.55rem;
+  gap: var(--wh-space-2);
 }
 
 .wildharvest-gm-session-chip {
   display: grid;
-  gap: 0.15rem;
+  gap: var(--wh-space-0);
   justify-items: start;
   width: 100%;
-  padding: 0.75rem 0.85rem;
+  padding: var(--wh-space-3) var(--wh-space-3);
   text-align: left;
   border-radius: var(--wildharvest-gm-radius-sm);
   border: 1px solid var(--wildharvest-gm-border-soft);
-  background: rgba(14, 14, 20, 0.48);
+  background: var(--wh-surface-0);
 }
 
 .wildharvest-gm-session-chip span {
   color: var(--wildharvest-gm-text-muted);
-  font-size: 0.88rem;
+  font-size: var(--wh-fs-sm);
+}
+
+/* W-5 (1.21.3): the date tells apart scenes with the same preset. */
+.wildharvest-gm-session-chip small {
+  color: var(--wildharvest-gm-text-muted);
+  font-size: var(--wh-fs-xs);
 }
 
 .wildharvest-gm-session-chip.is-active {
   border-color: var(--wildharvest-gm-border-bright);
   background:
-    linear-gradient(180deg, rgba(217, 170, 85, 0.16), rgba(20, 17, 25, 0.86));
+    linear-gradient(180deg, color-mix(in srgb, var(--wh-accent) 16%, transparent), var(--wh-surface-1));
   box-shadow: var(--wildharvest-gm-glow);
 }
 
 .wildharvest-gm-response-entry {
   display: grid;
-  gap: 0.8rem;
+  gap: var(--wh-space-3);
   padding: 0;
   border-radius: var(--wildharvest-gm-radius-sm);
-  border: 1px solid rgba(217, 170, 85, 0.22);
+  border: 1px solid color-mix(in srgb, var(--wh-accent) 22%, transparent);
   background:
-    linear-gradient(180deg, rgba(18, 15, 24, 0.82), rgba(9, 8, 13, 0.88));
+    linear-gradient(180deg, var(--wh-surface-1), var(--wh-surface-0));
 }
 
 .wildharvest-gm-response-entry.has-result {
-  border-color: rgba(217, 170, 85, 0.3);
+  border-color: color-mix(in srgb, var(--wh-accent) 30%, transparent);
 }
 
 .wildharvest-gm-response-entry.is-completed {
-  border-color: rgba(145, 185, 106, 0.28);
+  border-color: color-mix(in srgb, var(--wh-success) 28%, transparent);
 }
 
 .wildharvest-gm-response-entry.is-pending {
-  border-color: rgba(217, 144, 55, 0.28);
+  border-color: color-mix(in srgb, var(--wh-accent) 28%, transparent);
 }
 
 .wildharvest-gm-response-entry.is-skipped {
-  border-color: rgba(143, 136, 126, 0.24);
+  border-color: color-mix(in srgb, var(--wh-text-subtle) 24%, transparent);
 }
 
 .wildharvest-gm-response-entry.is-pending .wildharvest-gm-response-entry__main,
@@ -925,9 +774,9 @@
 .wildharvest-gm-response-entry__main {
   display: grid;
   grid-template-columns: 12px minmax(160px, 1fr) 110px 100px auto 26px;
-  gap: 0.75rem;
+  gap: var(--wh-space-3);
   align-items: center;
-  padding: 0.95rem 1rem;
+  padding: var(--wh-space-4) var(--wh-space-4);
 }
 
 .wildharvest-gm-response-entry__dot {
@@ -939,12 +788,12 @@
 
 .wildharvest-gm-response-entry.is-completed .wildharvest-gm-response-entry__dot {
   background: var(--wildharvest-gm-success);
-  box-shadow: 0 0 8px rgba(145, 185, 106, 0.35);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--wh-success) 35%, transparent);
 }
 
 .wildharvest-gm-response-entry.is-pending .wildharvest-gm-response-entry__dot {
   background: var(--wildharvest-gm-warning);
-  box-shadow: 0 0 8px rgba(215, 169, 77, 0.35);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--wh-accent) 35%, transparent);
 }
 
 .wildharvest-gm-response-entry.is-skipped .wildharvest-gm-response-entry__dot {
@@ -953,7 +802,7 @@
 
 .wildharvest-gm-response-entry__identity {
   display: grid;
-  gap: 0.15rem;
+  gap: var(--wh-space-0);
 }
 
 .wildharvest-gm-response-entry__identity strong,
@@ -967,27 +816,27 @@
 
 .wildharvest-gm-response-entry__stat {
   display: grid;
-  gap: 0.2rem;
-  padding-left: 0.8rem;
-  border-left: 1px solid rgba(217, 170, 85, 0.14);
+  gap: var(--wh-space-1);
+  padding-left: var(--wh-space-3);
+  border-left: 1px solid color-mix(in srgb, var(--wh-accent) 14%, transparent);
 }
 
 .wildharvest-gm-response-entry__stat span {
   color: var(--wildharvest-gm-text-muted);
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: var(--wh-fs-xs);
+  font-weight: var(--wh-fw-bold);
 }
 
 .wildharvest-gm-response-entry__stat strong {
   color: var(--wildharvest-gm-accent-bright);
-  font-size: 1.6rem;
-  line-height: 1;
+  font-size: var(--wh-fs-2xl);
+  line-height: var(--wh-lh-none);
 }
 
 .wildharvest-gm-response-entry__waiting {
-  color: #d7c5a5;
-  font-size: 0.84rem;
-  line-height: 1.4;
+  color: var(--wh-text-muted);
+  font-size: var(--wh-fs-sm);
+  line-height: var(--wh-lh-normal);
 }
 
 .wildharvest-gm-response-entry__toggle {
@@ -1006,12 +855,12 @@
 
 .wildharvest-gm-response-entry__details {
   display: grid;
-  gap: 0.35rem;
-  margin: 0 1rem 1rem 2.65rem;
-  padding: 0.9rem 1rem;
-  border-radius: 10px;
-  border: 1px solid rgba(217, 170, 85, 0.16);
-  background: rgba(5, 4, 8, 0.38);
+  gap: var(--wh-space-1);
+  margin: 0 var(--wh-space-4) var(--wh-space-4) 2.65rem;
+  padding: var(--wh-space-4) var(--wh-space-4);
+  border-radius: var(--wh-radius-md);
+  border: 1px solid color-mix(in srgb, var(--wh-accent) 16%, transparent);
+  background: var(--wh-surface-0);
 }
 
 .wildharvest-gm-response-entry__details strong,
@@ -1026,13 +875,13 @@
 
 .wildharvest-gm-response-entry__details p {
   margin: 0;
-  color: #cfc0a6;
-  line-height: 1.45;
+  color: var(--wh-text-muted);
+  line-height: var(--wh-lh-relaxed);
 }
 
 .wildharvest-gm-response-entry__details span {
   color: var(--wildharvest-gm-text-muted);
-  font-size: 0.75rem;
+  font-size: var(--wh-fs-xs);
 }
 
 .wildharvest-gm-response-entry.is-collapsed .wildharvest-gm-response-entry__details {
@@ -1042,52 +891,53 @@
 .wildharvest-gm-status {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.38rem 0.78rem;
-  border-radius: 999px;
+  gap: var(--wh-space-2);
+  padding: var(--wh-space-2) var(--wh-space-3);
+  border-radius: var(--wh-radius-pill);
   border: 1px solid currentColor;
-  background: rgba(255, 255, 255, 0.04);
-  font-size: 0.84rem;
-  font-weight: 700;
+  background: color-mix(in srgb, var(--wh-text) 4%, transparent);
+  font-size: var(--wh-fs-sm);
+  font-weight: var(--wh-fw-bold);
   white-space: nowrap;
 }
 
 .wildharvest-gm-status__asset {
   width: 13px;
   height: 13px;
+  font-size: var(--wh-fs-sm);
 }
 
 .wildharvest-gm-status--completed {
   color: var(--wildharvest-gm-success);
-  background: rgba(145, 185, 106, 0.12);
+  background: color-mix(in srgb, var(--wh-success) 12%, transparent);
 }
 
 .wildharvest-gm-status--accepted,
 .wildharvest-gm-status--pending {
   color: var(--wildharvest-gm-warning);
-  background: rgba(215, 169, 77, 0.12);
+  background: color-mix(in srgb, var(--wh-accent) 12%, transparent);
 }
 
 .wildharvest-gm-status--declined {
   color: var(--wildharvest-gm-text-dim);
-  background: rgba(143, 136, 126, 0.1);
+  background: color-mix(in srgb, var(--wh-text-subtle) 10%, transparent);
 }
 
 .wildharvest-gm-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 0.85rem;
-  padding-top: 0.35rem;
-  border-top: 1px solid rgba(217, 170, 85, 0.16);
+  gap: var(--wh-space-3);
+  padding-top: var(--wh-space-1);
+  border-top: 1px solid color-mix(in srgb, var(--wh-accent) 16%, transparent);
 }
 
 .wildharvest-gm-footer__meta {
   display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: var(--wh-space-2);
   color: var(--wildharvest-gm-text-muted);
-  font-size: 0.78rem;
+  font-size: var(--wh-fs-xs);
 }
 
 .wildharvest-gm-footer__dot {
@@ -1095,7 +945,7 @@
   height: 8px;
   border-radius: 50%;
   background: var(--wildharvest-gm-success);
-  box-shadow: 0 0 8px rgba(145, 185, 106, 0.4);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--wh-success) 40%, transparent);
 }
 
 .wildharvest-gm-footer .button {
@@ -1112,36 +962,10 @@
   display: none !important;
 }
 
-@media (max-width: 1180px) {
-  .wildharvest-gm-active-scene {
-    grid-template-columns: 52px minmax(0, 1fr);
-  }
-
-  .wildharvest-gm-active-scene__aside {
-    grid-column: 1 / -1;
-    justify-items: start;
-    margin-left: calc(52px + 0.9rem);
-  }
-
-  .wildharvest-gm-live-summary {
-    grid-template-columns: 1fr;
-  }
-
+@container wh-gm (max-width: 1100px) {
   .wildharvest-gm-live-filters {
     justify-content: start;
   }
-}
-
-.wildharvest-gm-preset-card {
-  align-content: start;
-}
-
-.wildharvest-gm-preset-card .wildharvest-tag-list {
-  margin-top: 0;
-}
-
-.wildharvest-gm-preset-card .wildharvest-inline-actions {
-  margin-top: auto;
 }
 
 .wildharvest-gm-preview-reward-card {
@@ -1150,62 +974,34 @@
 
 .wildharvest-gm-editor-filters {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.55fr);
-  gap: 0.6rem;
+  /* 1.31.0: wraps to one column by itself in a narrow editor (the editor window has no fixed width). */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: var(--wh-space-2);
 }
 
-@media (max-width: 1180px) {
-  .wildharvest-gm-main-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .wildharvest-gm-live-card .wildharvest-gm-response-list {
-    max-height: 26rem;
-  }
-}
-
-@media (max-width: 720px) {
-  .wildharvest-card-grid--compact {
-    grid-template-columns: 1fr;
-  }
-
-  .wildharvest-section-header,
-  .wildharvest-summary-row,
+@container wh-gm (max-width: 700px) {
   .wildharvest-inline-actions--end {
     justify-content: stretch;
   }
 
   .wildharvest-gm-tabs,
-  .wildharvest-gm-main-grid,
-  .wildharvest-gm-grid--launch,
-  .wildharvest-gm-grid--launch-secondary,
   .wildharvest-gm-grid--responses,
   .wildharvest-gm-form--launch,
-  .wildharvest-gm-stat-grid,
-  .wildharvest-gm-response-entry__stats,
-  .wildharvest-gm-editor-filters {
+  .wildharvest-gm-stat-grid {
     grid-template-columns: 1fr;
   }
 
-  .wildharvest-gm-response-entry__header,
   .wildharvest-gm-card__header,
-  .wildharvest-gm-panel__header,
-  .wildharvest-gm-live-summary {
+  .wildharvest-gm-panel__header {
     grid-template-columns: 1fr;
     display: grid;
   }
 
   .wildharvest-gm-launch-secondary-actions,
-  .wildharvest-gm-active-scene,
   .wildharvest-gm-response-entry__main,
   .wildharvest-gm-footer {
     grid-template-columns: 1fr;
     display: grid;
-  }
-
-  .wildharvest-gm-progress {
-    justify-items: start;
-    text-align: left;
   }
 
   .wildharvest-gm-launch-form-shell {
@@ -1213,15 +1009,113 @@
   }
 
   .wildharvest-gm-response-entry__details {
-    margin-inline: 1rem;
+    margin-inline: var(--wh-space-4);
   }
 }
 
 .wildharvest-history {
   margin: 0;
-  padding-left: 1.1rem;
+  padding-left: var(--wh-space-4);
 }
 
 .wildharvest-history li + li {
-  margin-top: 0.5rem;
+  margin-top: var(--wh-space-2);
+}
+
+/* 1.34.0: the GM's loot review window. */
+.wildharvest-loot-review__lead {
+  margin: 0;
+  color: var(--wh-text);
+}
+
+.wildharvest-loot-review__summary {
+  margin: 0;
+  color: var(--wh-text);
+  font-weight: var(--wh-fw-bold);
+}
+
+.wildharvest-loot-review__tolerance {
+  margin: 0;
+  padding: var(--wh-space-2) var(--wh-space-2);
+  border: 1px solid color-mix(in srgb, var(--wh-warning) 50%, transparent);
+  border-radius: var(--wh-radius-md);
+  background: color-mix(in srgb, var(--wh-warning) 10%, transparent);
+  color: var(--wh-text);
+  font-size: var(--wh-fs-sm);
+}
+
+.wildharvest-loot-review__tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--wh-space-2);
+}
+
+.wildharvest-loot-review__tools .button {
+  flex: 0 0 auto;
+  width: auto;
+  height: auto;
+  min-height: 1.8rem;
+  padding: var(--wh-space-1) var(--wh-space-2);
+  font-size: var(--wh-fs-xs);
+}
+
+.wildharvest-loot-review__count {
+  margin-left: auto;
+  color: var(--wh-text-muted);
+  font-size: var(--wh-fs-xs);
+}
+
+.wildharvest-loot-review__list {
+  display: grid;
+  gap: var(--wh-space-1);
+  max-height: min(50vh, 24rem);
+  margin: 0;
+  padding: 0 var(--wh-space-1) 0 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.wildharvest-window--gm .wildharvest-loot-review__item {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--wh-space-2);
+  padding: var(--wh-space-1) var(--wh-space-2);
+  border: 1px solid var(--wh-border-soft);
+  border-radius: var(--wh-radius-sm);
+  background: var(--wh-surface-0);
+  cursor: pointer;
+}
+
+.wildharvest-loot-review__item:has(input:not(:checked)) :is(.wildharvest-loot-review__name, .wildharvest-loot-review__quantity) {
+  color: var(--wh-text-muted);
+  text-decoration: line-through;
+}
+
+.wildharvest-loot-review__item img {
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: var(--wh-radius-sm);
+  object-fit: cover;
+}
+
+.wildharvest-loot-review__name {
+  min-width: 0;
+  color: var(--wh-text);
+  font-size: var(--wh-fs-sm);
+  overflow-wrap: anywhere;
+}
+
+.wildharvest-loot-review__name small {
+  display: block;
+  color: var(--wh-text-muted);
+  font-size: var(--wh-fs-xs);
+}
+
+.wildharvest-loot-review__quantity {
+  color: var(--wh-accent-bright);
+  font-weight: var(--wh-fw-bold);
 }

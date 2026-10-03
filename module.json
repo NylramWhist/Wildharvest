@@ -1,15 +1,15 @@
 {
     "id":  "wildharvest",
     "title":  "Wildharvest",
-    "description":  "A search and harvesting gameplay module for D\u0026D 5e on Foundry VTT 13 and 14.",
-    "version":  "1.20.0",
+    "description":  "A search and harvesting gameplay module for D\u0026D 5e on Foundry VTT 14.",
+    "version":  "1.39.0",
     "authors":  [
                     {
                         "name":  "Tomor"
                     }
                 ],
     "compatibility":  {
-                          "minimum":  "13.351",
+                          "minimum":  "14",
                           "verified":  "14.360"
                       },
     "type":  "module",
@@ -32,6 +32,8 @@
                       "scripts/main.js"
                   ],
     "styles":  [
+                   "styles/tokens.css",
+                   "styles/icons.css",
                    "styles/module.css",
                    "styles/gm-dialogs.css",
                    "styles/gm-workbench.css",
@@ -61,5 +63,5 @@
                       },
     "url":  "https://github.com/NylramWhist/Wildharvest",
     "manifest":  "https://raw.githubusercontent.com/NylramWhist/Wildharvest/main/module.json",
-    "download":  "https://github.com/NylramWhist/Wildharvest/releases/download/v1.20.0/Wildharvest-1.20.0.zip"
+    "download":  "https://github.com/NylramWhist/Wildharvest/releases/download/v1.39.0/Wildharvest-1.39.0.zip"
 }

@@ -1,42 +1,25 @@
 /* Wildharvest Workbench theme: GM control panel only. */
 
-.wildharvest-window--gm {
-  --wildharvest-gm-bg-deep: #0b0907;
-  --wildharvest-gm-bg-window: #12100d;
-  --wildharvest-gm-bg-panel: #1a160f;
-  --wildharvest-gm-bg-panel-alt: #211a10;
-  --wildharvest-gm-bg-hover: #2a2012;
-  --wildharvest-gm-bg-input: #100e0b;
-  --wildharvest-gm-border-dark: #3b2913;
-  --wildharvest-gm-border: #6b4719;
-  --wildharvest-gm-border-soft: color-mix(in srgb, var(--wildharvest-gm-border) 48%, transparent);
-  --wildharvest-gm-border-bright: #a87524;
-  --wildharvest-gm-accent: #c7922f;
-  --wildharvest-gm-accent-bright: #e0b44d;
-  --wildharvest-gm-accent-muted: #8d6829;
-  --wildharvest-gm-text: #e7ddc7;
-  --wildharvest-gm-text-muted: #b9aa8c;
-  --wildharvest-gm-text-dim: #a69679;
-  --wildharvest-gm-text-dark: #18130c;
-  --wildharvest-gm-success: #819f4d;
-  --wildharvest-gm-warning: #c18b32;
-  --wildharvest-gm-danger: #9b3428;
-  --wildharvest-gm-radius-sm: 3px;
-  --wildharvest-gm-radius-md: 4px;
-  --wildharvest-gm-radius-lg: 5px;
-  --wildharvest-gm-shadow-panel:
-    0 10px 28px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 225, 165, 0.035);
-  --wildharvest-gm-glow:
-    inset 0 0 12px rgba(199, 146, 47, 0.1),
-    0 0 8px rgba(199, 146, 47, 0.07);
-}
-
 .wildharvest-window--gm .window-content {
   background: var(--wildharvest-gm-bg-deep);
   background-color: var(--wildharvest-gm-bg-deep);
   color: var(--wildharvest-gm-text);
-  line-height: 1.4;
+  line-height: var(--wh-lh-normal);
+}
+
+/* 1.31.0 (F2): size containers for the width-dependent layout (@container rules). Only windows
+   with a fixed width can be containers; dialogs sized by their content wrap by themselves. */
+#wildharvest-gm-control-panel .window-content {
+  container: wh-gm / inline-size;
+}
+
+#wildharvest-rules-settings .window-content {
+  container: wh-rules / inline-size;
+}
+
+.wildharvest-window--player-roll .window-content,
+.wildharvest-window--player-result .window-content {
+  container: wh-player / inline-size;
 }
 
 #wildharvest-gm-control-panel.wildharvest-window--gm,
@@ -52,76 +35,76 @@
 /* 1.18.0 ApplicationV2 workbench shell. */
 .wildharvest-window--gm .window-content.wildharvest-gm-panel {
   grid-template-rows: auto auto minmax(0, 1fr) auto;
-  gap: 0.65rem;
+  gap: var(--wh-space-3);
   max-height: none;
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
-  padding: 0.55rem 0.8rem 0.45rem 0.6rem;
+  padding: var(--wh-space-2) var(--wh-space-3) var(--wh-space-2) var(--wh-space-2);
   scrollbar-gutter: stable;
 }
 
 .wildharvest-window--gm .dialog-content {
-  padding: 0.55rem 0.6rem 0.45rem;
+  padding: var(--wh-space-2) var(--wh-space-2) var(--wh-space-2);
 }
 
 .wildharvest-window--gm .window-header {
   min-height: 2.25rem;
-  padding: 0.35rem 0.55rem;
+  padding: var(--wh-space-1) var(--wh-space-2);
   border-bottom-color: var(--wildharvest-gm-border-dark);
   background:
-    linear-gradient(90deg, transparent, rgba(199, 146, 47, 0.055), transparent),
-    linear-gradient(180deg, #19150f, #0f0d0a);
+    linear-gradient(90deg, transparent, color-mix(in srgb, var(--wh-accent) 5.5%, transparent), transparent),
+    linear-gradient(180deg, var(--wh-surface-1), var(--wh-surface-0));
 }
 
 .wildharvest-window--gm .window-title {
   color: var(--wildharvest-gm-text);
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 0.95rem;
+  font-family: var(--wh-font-heading);
+  font-size: var(--wh-fs-md);
   letter-spacing: 0.025em;
-  text-shadow: 0 1px 0 #000;
+  text-shadow: 0 1px 0 var(--wh-text-shadow-color);
 }
 
 .wildharvest-window--gm .window-header button {
   min-height: 1.7rem;
   min-width: 1.7rem;
-  padding: 0.2rem;
-  border-radius: 3px;
+  padding: var(--wh-space-1);
+  border-radius: var(--wh-radius-sm);
 }
 
 .wildharvest-gm-panel {
-  gap: 0.65rem;
-  padding-right: 0.2rem;
+  gap: var(--wh-space-3);
+  padding-right: var(--wh-space-1);
 }
 
 .wildharvest-gm-panel__header {
   align-items: center;
   min-height: 3.45rem;
-  padding: 0.5rem 0.65rem;
+  padding: var(--wh-space-2) var(--wh-space-3);
   border: 1px solid var(--wildharvest-gm-border-dark);
   border-radius: var(--wildharvest-gm-radius-md);
   background:
-    linear-gradient(90deg, rgba(199, 146, 47, 0.045), transparent 38%),
-    linear-gradient(180deg, #17130e, #0e0c09);
-  box-shadow: inset 0 -1px rgba(168, 117, 36, 0.2);
+    linear-gradient(90deg, color-mix(in srgb, var(--wh-accent) 4.5%, transparent), transparent 38%),
+    linear-gradient(180deg, var(--wh-surface-1), var(--wh-surface-0));
+  box-shadow: inset 0 -1px color-mix(in srgb, var(--wh-accent) 20%, transparent);
 }
 
 .wildharvest-gm-panel__title {
   grid-template-columns: auto minmax(0, 1fr);
-  column-gap: 0.7rem;
-  row-gap: 0.1rem;
+  column-gap: var(--wh-space-3);
+  row-gap: var(--wh-space-0);
   align-items: center;
 }
 
 .wildharvest-gm-panel__title h2 {
   grid-column: 1 / -1;
-  gap: 0.7rem;
+  gap: var(--wh-space-3);
   color: var(--wildharvest-gm-text);
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 1.65rem;
-  line-height: 1.05;
+  font-family: var(--wh-font-heading);
+  font-size: var(--wh-fs-2xl);
+  line-height: var(--wh-lh-none);
   letter-spacing: 0.02em;
-  text-shadow: 0 1px 0 #000;
+  text-shadow: 0 1px 0 var(--wh-text-shadow-color);
 }
 
 .wildharvest-gm-panel__title h2::after {
@@ -130,47 +113,47 @@
 
 .wildharvest-gm-panel__title p {
   grid-column: 2;
-  font-size: 0.75rem;
-  line-height: 1.3;
+  font-size: var(--wh-fs-xs);
+  line-height: var(--wh-lh-normal);
 }
 
 .wildharvest-gm-panel__title-asset {
   width: 32px;
   height: 32px;
-  padding: 4px;
+  padding: var(--wh-space-1);
   border: 1px solid var(--wildharvest-gm-border-dark);
-  border-radius: 4px;
-  background: linear-gradient(180deg, #241a0d, #120e08);
-  filter: drop-shadow(0 0 5px rgba(199, 146, 47, 0.25));
+  border-radius: var(--wh-radius-sm);
+  background: linear-gradient(180deg, var(--wh-surface-2), var(--wh-surface-0));
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--wh-accent) 25%, transparent));
 }
 
 .wildharvest-gm-tabs {
-  gap: 0.22rem;
-  padding: 0 0.15rem;
+  gap: var(--wh-space-1);
+  padding: 0 var(--wh-space-0);
 }
 
 .wildharvest-gm-tab {
   min-height: 2.45rem;
-  padding: 0.42rem 0.65rem;
+  padding: var(--wh-space-2) var(--wh-space-3);
   border-color: var(--wildharvest-gm-border-dark);
-  border-radius: 3px;
-  background: linear-gradient(180deg, #19150f, #100e0b);
+  border-radius: var(--wh-radius-sm);
+  background: linear-gradient(180deg, var(--wh-surface-1), var(--wh-surface-0));
   color: var(--wildharvest-gm-text-muted);
-  font-size: 0.84rem;
-  font-weight: 700;
-  box-shadow: inset 0 1px rgba(255, 255, 255, 0.025);
+  font-size: var(--wh-fs-sm);
+  font-weight: var(--wh-fw-bold);
+  box-shadow: inset 0 1px color-mix(in srgb, var(--wh-text) 2.5%, transparent);
 }
 
 .wildharvest-gm-tab:hover {
   transform: none;
   border-color: var(--wildharvest-gm-border);
-  background: linear-gradient(180deg, #2a2012, #17110b);
+  background: linear-gradient(180deg, var(--wh-surface-2), var(--wh-surface-1));
   color: var(--wildharvest-gm-accent-bright);
 }
 
 .wildharvest-gm-tab.is-active {
   border-color: var(--wildharvest-gm-border-bright);
-  background: linear-gradient(180deg, #4a3214, #291b0e);
+  background: linear-gradient(180deg, var(--wh-surface-3), var(--wh-surface-2));
   color: var(--wildharvest-gm-accent-bright);
   box-shadow: var(--wildharvest-gm-glow);
 }
@@ -184,74 +167,86 @@
 .wildharvest-gm-tab__asset {
   width: 15px;
   height: 15px;
+  font-size: var(--wh-fs-md);
 }
 
 .wildharvest-gm-panel__body,
-.wildharvest-gm-grid,
-.wildharvest-gm-main-grid {
-  gap: 0.65rem;
+.wildharvest-gm-grid {
+  gap: var(--wh-space-3);
 }
 
-/* 1.2.0 density pass: keep launch controls and live responses visible together. */
-.wildharvest-gm-main-grid {
-  grid-template-columns: minmax(390px, 0.9fr) minmax(500px, 1.1fr);
+/* 1.27.0: every tab is its own part; only the active one is shown (the others keep the hidden attribute). */
+.wildharvest-gm-panel__body[hidden] {
+  display: none;
+}
+
+/* W-3 (1.21.3): the tab content scrolls inside its own row, so it no longer runs under the footer. */
+.wildharvest-window--gm .wildharvest-gm-panel__body {
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+/* W-4 (1.21.3), for every card since 1.31.0: in a tall window a card keeps its rows compact
+   instead of stretching them (the History card left a gap above its panes). */
+.wildharvest-gm-card {
+  align-content: start;
 }
 
 .wildharvest-gm-card,
 .wildharvest-gm-session-detail {
-  gap: 0.65rem;
-  padding: 0.72rem;
+  gap: var(--wh-space-3);
+  padding: var(--wh-space-3);
   border-color: var(--wildharvest-gm-border-dark);
   border-radius: var(--wildharvest-gm-radius-md);
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.012), transparent 45%),
+    linear-gradient(135deg, color-mix(in srgb, var(--wh-text) 1.2%, transparent), transparent 45%),
     linear-gradient(180deg, var(--wildharvest-gm-bg-panel), var(--wildharvest-gm-bg-deep));
   box-shadow:
-    inset 0 0 18px rgba(0, 0, 0, 0.25),
-    0 1px 3px rgba(0, 0, 0, 0.42);
+    inset 0 0 18px color-mix(in srgb, var(--wh-shadow-color) 25%, transparent),
+    0 1px 3px color-mix(in srgb, var(--wh-shadow-color) 42%, transparent);
 }
 
 .wildharvest-gm-card--primary,
-.wildharvest-gm-session-detail,
-.wildharvest-gm-panel--has-live-session .wildharvest-gm-live-card {
+.wildharvest-gm-session-detail {
   border-color: var(--wildharvest-gm-border);
   box-shadow:
-    inset 0 0 18px rgba(0, 0, 0, 0.25),
-    inset 0 1px rgba(224, 180, 77, 0.035),
-    0 1px 3px rgba(0, 0, 0, 0.45);
+    inset 0 0 18px color-mix(in srgb, var(--wh-shadow-color) 25%, transparent),
+    inset 0 1px color-mix(in srgb, var(--wh-accent) 3.5%, transparent),
+    0 1px 3px color-mix(in srgb, var(--wh-shadow-color) 45%, transparent);
 }
 
 .wildharvest-gm-card__header {
-  gap: 0.55rem;
-  padding-bottom: 0.38rem;
+  /* 1.31.0: wraps by itself in windows without a size container (the reward preview). */
+  flex-wrap: wrap;
+  gap: var(--wh-space-2);
+  padding-bottom: var(--wh-space-2);
   border-bottom: 1px solid var(--wildharvest-gm-border-dark);
 }
 
 .wildharvest-gm-card__header h3 {
   color: var(--wildharvest-gm-accent-bright);
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 0.93rem;
+  font-family: var(--wh-font-heading);
+  font-size: var(--wh-fs-sm);
   letter-spacing: 0.035em;
 }
 
 .wildharvest-gm-card__header p,
-.wildharvest-gm-readonly,
-.wildharvest-gm-response-entry__meta {
-  font-size: 0.76rem;
+.wildharvest-gm-readonly {
+  font-size: var(--wh-fs-xs);
 }
 
 .wildharvest-gm-form--launch {
-  gap: 0.55rem 0.7rem;
+  gap: var(--wh-space-2) var(--wh-space-3);
 }
 
 .wildharvest-gm-form--launch .form-group {
-  gap: 0.22rem;
+  gap: var(--wh-space-1);
   margin: 0;
 }
 
 .wildharvest-gm-launch-form-shell,
 .wildharvest-gm-launch-actions {
-  gap: 0.5rem;
+  gap: var(--wh-space-2);
 }
 
 .wildharvest-gm-readonly--multiline {
@@ -261,17 +256,17 @@
 }
 
 .wildharvest-gm-launch-secondary-actions {
-  gap: 0.4rem;
+  gap: var(--wh-space-2);
 }
 
 .wildharvest-gm-launch-secondary-actions .button {
   min-height: 1.95rem;
-  padding-block: 0.32rem;
+  padding-block: var(--wh-space-1);
 }
 
 .wildharvest-window--gm label {
   color: var(--wildharvest-gm-text-muted);
-  font-size: 0.75rem;
+  font-size: var(--wh-fs-xs);
   letter-spacing: 0.025em;
 }
 
@@ -281,8 +276,8 @@
 .wildharvest-gm-readonly {
   min-height: 2.1rem;
   border-color: var(--wildharvest-gm-border-dark);
-  border-radius: 3px;
-  background: linear-gradient(180deg, #15110d, var(--wildharvest-gm-bg-input));
+  border-radius: var(--wh-radius-sm);
+  background: linear-gradient(180deg, var(--wh-surface-1), var(--wildharvest-gm-bg-input));
   color: var(--wildharvest-gm-text);
 }
 
@@ -307,26 +302,26 @@
   outline: 1px solid var(--wildharvest-gm-accent);
   outline-offset: 1px;
   border-color: var(--wildharvest-gm-border-bright);
-  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.58);
+  box-shadow: inset 0 1px 4px color-mix(in srgb, var(--wh-shadow-color) 58%, transparent);
 }
 
 .wildharvest-window--gm .button,
 .wildharvest-window--gm button {
   min-height: 2.15rem;
-  padding: 0.42rem 0.72rem;
+  padding: var(--wh-space-2) var(--wh-space-3);
   border-color: var(--wildharvest-gm-border-dark);
-  border-radius: 3px;
-  background: linear-gradient(180deg, #1d1811, #100e0a);
+  border-radius: var(--wh-radius-sm);
+  background: linear-gradient(180deg, var(--wh-surface-1), var(--wh-surface-0));
   color: var(--wildharvest-gm-text);
-  box-shadow: inset 0 1px rgba(255, 255, 255, 0.025);
-  transition: border-color 120ms ease, background 120ms ease, color 120ms ease;
+  box-shadow: inset 0 1px color-mix(in srgb, var(--wh-text) 2.5%, transparent);
+  transition: border-color var(--wh-motion-fast) var(--wh-ease), background var(--wh-motion-fast) var(--wh-ease), color var(--wh-motion-fast) var(--wh-ease);
 }
 
 .wildharvest-window--gm .button:hover,
 .wildharvest-window--gm button:hover {
   transform: none;
   border-color: var(--wildharvest-gm-border-bright);
-  background: linear-gradient(180deg, #2b2113, #17110b);
+  background: linear-gradient(180deg, var(--wh-surface-2), var(--wh-surface-1));
   color: var(--wildharvest-gm-accent-bright);
 }
 
@@ -349,21 +344,19 @@
 .wildharvest-window--gm button.default,
 .wildharvest-window--gm [data-action="gm-send-launch"] {
   border-color: var(--wildharvest-gm-border-bright);
-  background: linear-gradient(180deg, #5b3915, #2c1a0c);
-  color: #f0d58a;
+  background: linear-gradient(180deg, var(--wh-accent-fill), var(--wh-surface-2));
+  color: var(--wh-accent-bright);
   box-shadow:
-    inset 0 1px rgba(255, 229, 166, 0.1),
-    0 0 8px rgba(199, 146, 47, 0.08);
+    inset 0 1px color-mix(in srgb, var(--wh-accent-bright) 10%, transparent),
+    0 0 8px color-mix(in srgb, var(--wh-accent) 8%, transparent);
 }
 
 .wildharvest-window--gm [data-action="gm-send-launch"] {
   min-height: 2.35rem;
   margin-top: 0;
-  font-size: 0.88rem;
+  font-size: var(--wh-fs-sm);
 }
 
-.wildharvest-gm-active-scene,
-.wildharvest-gm-live-summary,
 .wildharvest-gm-readonly,
 .wildharvest-gm-session-chip,
 .wildharvest-gm-response-entry,
@@ -371,107 +364,41 @@
 .wildharvest-gm-recipient,
 .wildharvest-gm-compendium-option,
 .wildharvest-gm-empty-state-card {
-  border-radius: 3px;
-}
-
-.wildharvest-gm-active-scene,
-.wildharvest-gm-live-summary {
-  padding: 0.52rem 0.62rem;
-  border-color: var(--wildharvest-gm-border-dark);
-  background: linear-gradient(180deg, #17130e, #0d0b08);
-}
-
-.wildharvest-gm-active-scene {
-  grid-template-columns: 38px minmax(0, 1fr) auto;
-  gap: 0.62rem;
-}
-
-.wildharvest-gm-active-scene--empty {
-  grid-template-columns: 38px minmax(0, 1fr);
-}
-
-.wildharvest-gm-active-scene__icon {
-  width: 38px;
-  height: 38px;
-  border-color: var(--wildharvest-gm-border);
-  background: #171108;
-  box-shadow: inset 0 0 12px rgba(199, 146, 47, 0.07);
-}
-
-.wildharvest-gm-active-scene__asset {
-  width: 18px;
-  height: 18px;
-}
-
-.wildharvest-gm-active-scene__content {
-  gap: 0.08rem;
-}
-
-.wildharvest-gm-active-scene__content h4 {
-  font-size: 0.8rem;
-}
-
-.wildharvest-gm-active-scene__content strong {
-  font-size: 0.9rem;
-}
-
-.wildharvest-gm-active-scene__content p {
-  font-size: 0.75rem;
-  line-height: 1.25;
-}
-
-.wildharvest-gm-active-scene__aside {
-  gap: 0.35rem;
+  border-radius: var(--wh-radius-sm);
 }
 
 .wildharvest-gm-session-actions {
-  gap: 0.3rem;
+  gap: var(--wh-space-1);
 }
 
 .wildharvest-gm-session-actions .button {
   min-height: 1.85rem;
-  padding: 0.3rem 0.5rem;
-  font-size: 0.75rem;
-}
-
-.wildharvest-gm-live-summary {
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.5rem 0.7rem;
-}
-
-.wildharvest-gm-live-summary .wildharvest-gm-live-filters {
-  grid-column: 1 / -1;
-  justify-content: flex-start;
-}
-
-.wildharvest-gm-progress--badge {
-  min-width: 4.2rem;
-  padding: 0.4rem 0.55rem;
+  padding: var(--wh-space-1) var(--wh-space-2);
+  font-size: var(--wh-fs-xs);
 }
 
 .wildharvest-gm-live-filters {
-  gap: 0.3rem;
+  gap: var(--wh-space-1);
 }
 
 .wildharvest-gm-live-filters .button {
   min-height: 1.75rem;
-  padding: 0.25rem 0.6rem;
-  font-size: 0.75rem;
+  padding: var(--wh-space-1) var(--wh-space-2);
+  font-size: var(--wh-fs-xs);
 }
 
 .wildharvest-gm-live-filters .button,
-.wildharvest-gm-status,
-.wildharvest-window--gm .wildharvest-tag {
-  border-radius: 3px;
+.wildharvest-gm-status {
+  border-radius: var(--wh-radius-sm);
 }
 
 .wildharvest-gm-live-filters .button {
-  background: #100e0b;
+  background: var(--wh-surface-0);
 }
 
 .wildharvest-gm-live-filters .button.is-active {
   border-color: var(--wildharvest-gm-border-bright);
-  background: #39260f;
+  background: var(--wh-surface-3);
   color: var(--wildharvest-gm-accent-bright);
 }
 
@@ -480,17 +407,17 @@
   gap: 0;
   overflow: hidden;
   border: 1px solid var(--wildharvest-gm-border-dark);
-  border-radius: 3px;
-  background: #0e0c09;
+  border-radius: var(--wh-radius-sm);
+  background: var(--wh-surface-0);
 }
 
 .wildharvest-gm-stat {
   min-height: 3rem;
-  padding: 0.34rem 0.45rem;
+  padding: var(--wh-space-1) var(--wh-space-2);
   border: 0;
   border-right: 1px solid var(--wildharvest-gm-border-dark);
   border-radius: 0;
-  background: linear-gradient(180deg, #17130e, #0e0c09);
+  background: linear-gradient(180deg, var(--wh-surface-1), var(--wh-surface-0));
 }
 
 .wildharvest-gm-stat:last-child {
@@ -498,59 +425,59 @@
 }
 
 .wildharvest-gm-stat strong {
-  font-size: 1.15rem;
+  font-size: var(--wh-fs-lg);
 }
 
 .wildharvest-gm-stat span {
-  font-size: 0.75rem;
+  font-size: var(--wh-fs-xs);
 }
 
 .wildharvest-gm-response-entry {
-  gap: 0.45rem;
+  gap: var(--wh-space-2);
   border-color: var(--wildharvest-gm-border-dark);
-  background: linear-gradient(180deg, #17130e, #0d0b08);
-  transition: background 120ms ease, border-color 120ms ease;
+  background: linear-gradient(180deg, var(--wh-surface-1), var(--wh-surface-0));
+  transition: background var(--wh-motion-fast) var(--wh-ease), border-color var(--wh-motion-fast) var(--wh-ease);
 }
 
 .wildharvest-gm-response-entry:hover {
   border-color: var(--wildharvest-gm-border);
-  background: linear-gradient(180deg, #21190f, #120e09);
+  background: linear-gradient(180deg, var(--wh-surface-2), var(--wh-surface-0));
 }
 
 .wildharvest-gm-response-entry__main {
-  gap: 0.5rem;
-  padding: 0.48rem 0.58rem;
+  gap: var(--wh-space-2);
+  padding: var(--wh-space-2) var(--wh-space-2);
 }
 
 .wildharvest-gm-response-entry__stat strong {
-  font-size: 1.15rem;
+  font-size: var(--wh-fs-lg);
 }
 
 .wildharvest-gm-status {
-  padding: 0.24rem 0.45rem;
-  background: #12100c;
-  font-size: 0.75rem;
+  padding: var(--wh-space-1) var(--wh-space-2);
+  background: var(--wh-surface-0);
+  font-size: var(--wh-fs-xs);
 }
 
 .wildharvest-gm-response-entry__details {
-  margin: 0 0.58rem 0.58rem 2rem;
-  padding: 0.6rem 0.72rem;
+  margin: 0 var(--wh-space-2) var(--wh-space-2) 2rem;
+  padding: var(--wh-space-2) var(--wh-space-3);
 }
 
 .wildharvest-gm-status--completed {
-  background: color-mix(in srgb, var(--wildharvest-gm-success) 10%, #12100c);
+  background: color-mix(in srgb, var(--wildharvest-gm-success) 10%, var(--wh-surface-0));
 }
 
 .wildharvest-gm-status--accepted,
 .wildharvest-gm-status--pending {
-  background: color-mix(in srgb, var(--wildharvest-gm-warning) 10%, #12100c);
+  background: color-mix(in srgb, var(--wildharvest-gm-warning) 10%, var(--wh-surface-0));
 }
 
 .wildharvest-gm-session-chip,
 .wildharvest-gm-recipient,
 .wildharvest-gm-compendium-option {
   border-color: var(--wildharvest-gm-border-dark);
-  background: #14110d;
+  background: var(--wh-surface-0);
 }
 
 .wildharvest-gm-session-chip:hover,
@@ -562,11 +489,11 @@
 
 .wildharvest-window--gm table {
   border-color: var(--wildharvest-gm-border-dark);
-  background: #100e0b;
+  background: var(--wh-surface-0);
 }
 
 .wildharvest-window--gm table thead {
-  background: #1d1710;
+  background: var(--wh-surface-1);
   color: var(--wildharvest-gm-accent-bright);
 }
 
@@ -579,17 +506,15 @@
   background: var(--wildharvest-gm-bg-hover);
 }
 
-
-
 .wildharvest-gm-footer {
   min-height: 1.6rem;
   justify-content: space-between;
-  padding: 0.22rem 0.15rem 0;
+  padding: var(--wh-space-1) var(--wh-space-0) 0;
   border-top-color: var(--wildharvest-gm-border-dark);
 }
 
 .wildharvest-gm-footer__meta {
-  font-size: 0.75rem;
+  font-size: var(--wh-fs-xs);
 }
 
 .wildharvest-gm-footer__support {
@@ -597,25 +522,25 @@
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  gap: 0.38rem;
+  gap: var(--wh-space-2);
   min-height: 1.55rem;
   margin-left: auto;
-  padding: 0.18rem 0.55rem;
-  border: 1px solid rgba(211, 164, 71, 0.38);
-  border-radius: 3px;
+  padding: var(--wh-space-0) var(--wh-space-2);
+  border: 1px solid color-mix(in srgb, var(--wh-accent) 38%, transparent);
+  border-radius: var(--wh-radius-sm);
   color: var(--wildharvest-gm-accent);
-  background: rgba(211, 164, 71, 0.06);
-  font-size: 0.75rem;
-  font-weight: 700;
-  line-height: 1;
+  background: color-mix(in srgb, var(--wh-accent) 6%, transparent);
+  font-size: var(--wh-fs-xs);
+  font-weight: var(--wh-fw-bold);
+  line-height: var(--wh-lh-none);
   text-decoration: none;
-  transition: border-color 120ms ease, background-color 120ms ease, color 120ms ease;
+  transition: border-color var(--wh-motion-fast) var(--wh-ease), background-color var(--wh-motion-fast) var(--wh-ease), color var(--wh-motion-fast) var(--wh-ease);
 }
 
 .wildharvest-gm-footer__support:hover {
   border-color: var(--wildharvest-gm-accent);
   color: var(--wildharvest-gm-text);
-  background: rgba(211, 164, 71, 0.13);
+  background: color-mix(in srgb, var(--wh-accent) 13%, transparent);
   text-decoration: none;
 }
 
@@ -630,11 +555,267 @@
 }
 
 .wildharvest-window--gm ::-webkit-scrollbar-track {
-  background: #0b0907;
+  background: var(--wh-surface-0);
 }
 
 .wildharvest-window--gm ::-webkit-scrollbar-thumb {
-  border: 2px solid #0b0907;
-  border-radius: 4px;
+  border: 2px solid var(--wh-border);
+  border-radius: var(--wh-radius-sm);
   background: var(--wildharvest-gm-border);
+}
+
+/* 1.30.0: the scene bar and the launch card keep their own height instead of sharing the tab's. */
+.wildharvest-gm-panel__body--launch {
+  align-content: start;
+}
+
+/* 1.30.0: one status bar for the latest scene at the top of Launch Scene (replaces the
+   "Active scene" box and the "Live responses" card). */
+.wildharvest-gm-scene-bar {
+  display: grid;
+  gap: var(--wh-space-2);
+  padding: var(--wh-space-2) var(--wh-space-3);
+  border: 1px solid var(--wh-border);
+  border-left: 3px solid var(--wh-accent);
+  border-radius: var(--wh-radius-sm);
+  background: var(--wh-surface-1);
+}
+
+.wildharvest-gm-scene-bar.is-closed {
+  border-left-color: var(--wh-border);
+}
+
+.wildharvest-gm-scene-bar__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--wh-space-2) var(--wh-space-3);
+}
+
+.wildharvest-gm-scene-bar__icon {
+  --wh-icon-size: 1.125rem;
+  color: var(--wh-accent-bright);
+}
+
+.wildharvest-gm-scene-bar__title {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.wildharvest-gm-scene-bar__title h3 {
+  margin: 0;
+  border: 0;
+  color: var(--wh-text);
+  font-size: var(--wh-fs-sm);
+  font-weight: var(--wh-fw-bold);
+  line-height: var(--wh-lh-normal);
+  overflow-wrap: anywhere;
+}
+
+.wildharvest-gm-scene-bar__label {
+  color: var(--wh-text-muted);
+  font-weight: var(--wh-fw-regular);
+}
+
+.wildharvest-gm-scene-bar__title p {
+  margin: var(--wh-space-0) 0 0;
+  color: var(--wh-text-muted);
+  font-size: var(--wh-fs-xs);
+}
+
+.wildharvest-gm-scene-bar__progress {
+  display: grid;
+  justify-items: end;
+  line-height: var(--wh-lh-tight);
+}
+
+.wildharvest-gm-scene-bar__progress strong {
+  color: var(--wh-accent-bright);
+  font-size: var(--wh-fs-md);
+}
+
+.wildharvest-gm-scene-bar__progress span {
+  color: var(--wh-text-muted);
+  font-size: var(--wh-fs-xs);
+}
+
+.wildharvest-gm-scene-bar__players,
+.wildharvest-gm-recipient-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--wh-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wildharvest-gm-scene-player,
+.wildharvest-gm-recipient-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--wh-space-1);
+  max-width: 100%;
+  padding: var(--wh-space-0) var(--wh-space-2);
+  border: 1px solid var(--wh-border-soft);
+  border-radius: var(--wh-radius-pill);
+  background: var(--wh-surface-0);
+  color: var(--wh-text);
+  font-size: var(--wh-fs-xs);
+}
+
+.wildharvest-gm-scene-player__name {
+  font-weight: var(--wh-fw-bold);
+}
+
+.wildharvest-gm-scene-player__state,
+.wildharvest-gm-recipient-chip small {
+  color: var(--wh-text-muted);
+  font-size: var(--wh-fs-xs);
+}
+
+.wildharvest-gm-scene-player.is-completed i {
+  color: var(--wh-success);
+}
+
+.wildharvest-gm-scene-player.is-pending i {
+  color: var(--wh-warning);
+}
+
+.wildharvest-gm-scene-player.is-skipped i {
+  color: var(--wh-danger);
+}
+
+.wildharvest-gm-scene-bar .wildharvest-gm-session-actions {
+  justify-content: flex-start;
+}
+
+.wildharvest-gm-recipients-hint {
+  margin: var(--wh-space-1) 0 0;
+  color: var(--wh-text-muted);
+  font-size: var(--wh-fs-xs);
+}
+
+.wildharvest-gm-recipients-empty {
+  margin: 0;
+  padding: var(--wh-space-2) var(--wh-space-2);
+  border: 1px solid color-mix(in srgb, var(--wh-warning) 45%, transparent);
+  border-radius: var(--wh-radius-sm);
+  color: var(--wh-warning);
+  font-size: var(--wh-fs-xs);
+}
+
+/* W-5 (1.31.0): recent scenes grouped by day; each row shows the scene, progress, time, mode and state. */
+.wildharvest-gm-session-selector {
+  gap: var(--wh-space-2);
+}
+
+.wildharvest-gm-scene-day {
+  display: grid;
+  gap: var(--wh-space-1);
+}
+
+.wildharvest-gm-scene-day__label {
+  margin: 0;
+  border: 0;
+  color: var(--wh-text-muted);
+  font-size: var(--wh-fs-xs);
+  font-weight: var(--wh-fw-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.wildharvest-gm-scene-day__list {
+  display: grid;
+  gap: var(--wh-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wildharvest-window--gm .wildharvest-gm-session-chip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--wh-space-0) var(--wh-space-2);
+  align-items: baseline;
+  justify-items: stretch;
+  padding: var(--wh-space-2) var(--wh-space-2);
+  font-size: var(--wh-fs-xs);
+  line-height: var(--wh-lh-normal);
+}
+
+.wildharvest-gm-session-chip__name {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--wh-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wildharvest-window--gm .wildharvest-gm-session-chip__progress {
+  color: var(--wh-accent-bright);
+  font-weight: var(--wh-fw-bold);
+  text-align: right;
+}
+
+.wildharvest-window--gm .wildharvest-gm-session-chip__progress small,
+.wildharvest-window--gm .wildharvest-gm-session-chip__meta,
+.wildharvest-window--gm .wildharvest-gm-session-chip__state {
+  color: var(--wh-text-muted);
+  font-size: var(--wh-fs-xs);
+  font-weight: var(--wh-fw-regular);
+}
+
+.wildharvest-gm-session-chip__state {
+  text-align: right;
+}
+
+.wildharvest-window--gm .wildharvest-gm-session-chip:not(.is-closed) .wildharvest-gm-session-chip__state {
+  color: var(--wh-success);
+  font-weight: var(--wh-fw-bold);
+}
+
+/* 1.33.1: Foundry gives every button a fixed height, so a two-line scene row spilled its second
+   line onto the next row. The rows grow with their text instead. */
+.wildharvest-window--gm :is(.wildharvest-gm-session-chip, .wildharvest-gm-history-entry, .wildharvest-gm-history-actor) {
+  height: auto;
+}
+
+/* 1.33.1: a player's response row follows the width of its own list. In a narrow column the name
+   and the expand button stay on the first line and the results move to a second line instead of
+   running out of the card. */
+.wildharvest-gm-response-list {
+  container: wh-responses / inline-size;
+}
+
+@container wh-responses (max-width: 560px) {
+  .wildharvest-window--gm .wildharvest-gm-response-entry__main {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--wh-space-2) var(--wh-space-3);
+  }
+
+  .wildharvest-gm-response-entry__dot {
+    order: 0;
+  }
+
+  .wildharvest-gm-response-entry__identity {
+    order: 1;
+    flex: 1 1 calc(100% - 4rem);
+    min-width: 0;
+  }
+
+  .wildharvest-gm-response-entry__toggle {
+    order: 2;
+  }
+
+  .wildharvest-gm-response-entry__stat,
+  .wildharvest-gm-response-entry__waiting,
+  .wildharvest-gm-response-entry__main > .wildharvest-gm-status {
+    order: 3;
+  }
+
+  .wildharvest-gm-response-entry__main > .wildharvest-gm-status {
+    margin-left: auto;
+  }
 }

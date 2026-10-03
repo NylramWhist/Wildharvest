@@ -1,0 +1,113 @@
+<section id="wildharvest-gm-tabpanel-{{tabId}}" class="wildharvest-gm-panel__body" role="tabpanel" aria-labelledby="wildharvest-gm-tab-{{tabId}}" tabindex="0"{{#unless active}} hidden{{/unless}}>
+  {{#if active}}
+  <section class="wildharvest-gm-card">
+    <div class="wildharvest-gm-card__header">
+      <div>
+        <h3>{{localize "WILDHARVEST.Dialog.ControlPanel.HistoryTitle"}}</h3>
+        <p>{{localize "WILDHARVEST.Dialog.ControlPanel.HistoryHint"}}</p>
+      </div>
+      <div class="wildharvest-inline-actions wildharvest-inline-actions--end">
+        <button type="button" class="button" data-action="gm-clear-history"{{#unless canClear}} disabled{{/unless}}>
+          <i class="fa-solid fa-trash" aria-hidden="true"></i>
+          {{localize "WILDHARVEST.Dialog.Logs.Clear"}}
+        </button>
+      </div>
+    </div>
+    <div class="wildharvest-gm-history-workbench">
+      <section class="wildharvest-gm-history-pane wildharvest-gm-history-pane--actors">
+        <header class="wildharvest-gm-history-pane__header">
+          <h4>{{localize "WILDHARVEST.Dialog.ControlPanel.HistoryCharacters"}}</h4>
+          <span>{{actors.length}}</span>
+        </header>
+        {{#if actors.length}}
+        <div class="wildharvest-gm-history-actors">
+          {{#each actors}}
+          <button type="button" class="wildharvest-gm-history-actor{{#if active}} is-active{{/if}}" data-action="gm-select-history-actor" data-actor-id="{{id}}" aria-pressed="{{#if active}}true{{else}}false{{/if}}">
+            <img src="{{img}}" alt="">
+            <span>
+              <strong>{{name}}</strong>
+              <small>{{countLabel}}</small>
+            </span>
+          </button>
+          {{/each}}
+        </div>
+        {{else}}
+        <p class="wildharvest-empty wildharvest-gm-history-empty">{{localize "WILDHARVEST.Resources.NoActor"}}</p>
+        {{/if}}
+      </section>
+      <section class="wildharvest-gm-history-pane wildharvest-gm-history-pane--entries">
+        <header class="wildharvest-gm-history-pane__header">
+          <h4>{{localize "WILDHARVEST.Dialog.ControlPanel.HistoryEntries"}}</h4>
+          <span>{{entries.length}}</span>
+        </header>
+        <div class="form-group wildharvest-form-group--tight wildharvest-gm-history-search">
+          <label>{{localize "WILDHARVEST.Dialog.ControlPanel.HistorySearch"}}</label>
+          <input type="search" name="gmHistoryFilter" value="{{historyFilter}}" placeholder="{{localize "WILDHARVEST.Dialog.ControlPanel.HistorySearchPlaceholder"}}">
+        </div>
+        <div class="wildharvest-gm-history-table{{#unless showLocation}} wildharvest-gm-history-table--no-location{{/unless}}" aria-label="{{localize "WILDHARVEST.Dialog.ControlPanel.HistoryEntries"}}">
+          <div class="wildharvest-gm-history-table__header" aria-hidden="true">
+            <span>{{localize "WILDHARVEST.Dialog.ControlPanel.HistoryActivity"}}</span>
+            {{#if showLocation}}<span>{{localize "WILDHARVEST.Dialog.Search.Location"}}</span>{{/if}}
+            <span>{{localize "WILDHARVEST.Table.Skill"}}</span>
+            <span>{{localize "WILDHARVEST.Dialog.ControlPanel.HistoryResult"}}</span>
+            <span>{{localize "WILDHARVEST.Dialog.ControlPanel.HistoryDate"}}</span>
+          </div>
+          {{#if entries.length}}
+          <div class="wildharvest-gm-history-table__body">
+            {{#each entries}}
+            <button type="button" class="wildharvest-gm-history-entry{{#if active}} is-active{{/if}}" data-action="gm-select-history-entry" data-entry-key="{{key}}" aria-pressed="{{#if active}}true{{else}}false{{/if}}">
+              <span class="wildharvest-gm-history-entry__activity" data-label="{{localize "WILDHARVEST.Dialog.ControlPanel.HistoryActivity"}}">{{activityName}}</span>
+              {{#if ../showLocation}}<span data-label="{{localize "WILDHARVEST.Dialog.Search.Location"}}">{{locationName}}</span>{{/if}}
+              <span data-label="{{localize "WILDHARVEST.Table.Skill"}}">{{skillName}}</span>
+              <strong data-label="{{localize "WILDHARVEST.Dialog.ControlPanel.HistoryResult"}}">{{rollTotal}}</strong>
+              <span class="wildharvest-gm-history-entry__date" data-label="{{localize "WILDHARVEST.Dialog.ControlPanel.HistoryDate"}}">{{date}}</span>
+            </button>
+            {{/each}}
+          </div>
+          {{else}}
+          <p class="wildharvest-empty wildharvest-gm-history-empty">{{emptyText}}</p>
+          {{/if}}
+        </div>
+      </section>
+      <aside class="wildharvest-gm-history-pane wildharvest-gm-history-pane--details">
+        <header class="wildharvest-gm-history-pane__header">
+          <h4>{{localize "WILDHARVEST.Dialog.ControlPanel.HistoryDetails"}}</h4>
+        </header>
+        {{#with detail}}
+        <div class="wildharvest-gm-history-detail">
+          <header class="wildharvest-gm-history-detail__header">
+            <strong>{{activityName}}</strong>
+            {{#if locationName}}<span>{{locationName}}</span>{{/if}}
+          </header>
+          <dl class="wildharvest-gm-history-detail__stats">
+            {{#each stats}}<div><dt>{{label}}</dt><dd>{{value}}</dd></div>
+            {{/each}}
+          </dl>
+          <section class="wildharvest-gm-history-detail__rewards">
+            <h5>{{localize "WILDHARVEST.Dialog.Responses.Rewards"}}</h5>
+            {{#if rewards.length}}
+            <div class="wildharvest-gm-history-rewards">
+              {{#each rewards}}
+              <div class="wildharvest-gm-history-reward">
+                <img src="{{img}}" alt="">
+                <span>{{text}}</span>
+              </div>
+              {{/each}}
+            </div>
+            {{#if omittedText}}<p class="notes">{{omittedText}}</p>{{/if}}
+            {{else}}
+            <p class="wildharvest-empty">{{localize "WILDHARVEST.Dialog.Responses.NoRewards"}}</p>
+            {{/if}}
+          </section>
+        </div>
+        {{else}}
+        <div class="wildharvest-gm-history-detail-empty">
+          <i class="fa-solid fa-clock-rotate-left wh-icon wildharvest-gm-history-detail-empty__asset" aria-hidden="true"></i>
+          <p>{{localize "WILDHARVEST.Dialog.ControlPanel.HistoryNoSelection"}}</p>
+        </div>
+        {{/with}}
+      </aside>
+    </div>
+  </section>
+  {{/if}}
+</section>

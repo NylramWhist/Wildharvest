@@ -1,22 +1,27 @@
+// 1.27.0: every Workbench tab is its own ApplicationV2 part (templates/gm/tab-*.hbs). A refresh
+// renders the active tab and the footer; a tab change also renders the tab bar and the tab left.
 export const GM_CONTROL_PANEL_PARTS = Object.freeze({
   HEADER: "header",
   TABS: "tabs",
-  CONTENT: "content",
+  LAUNCH: "launch",
+  RESPONSES: "responses",
+  PRESETS: "presets",
+  HISTORY: "history",
   FOOTER: "footer"
 });
 
-const CONTENT_RENDER_PARTS = Object.freeze([
-  GM_CONTROL_PANEL_PARTS.CONTENT,
-  GM_CONTROL_PANEL_PARTS.FOOTER
+export const GM_CONTROL_PANEL_TAB_PARTS = Object.freeze([
+  GM_CONTROL_PANEL_PARTS.LAUNCH,
+  GM_CONTROL_PANEL_PARTS.RESPONSES,
+  GM_CONTROL_PANEL_PARTS.PRESETS,
+  GM_CONTROL_PANEL_PARTS.HISTORY
 ]);
 
-const NAVIGATION_RENDER_PARTS = Object.freeze([
-  GM_CONTROL_PANEL_PARTS.TABS,
-  ...CONTENT_RENDER_PARTS
-]);
-
-export function getGmControlPanelRenderParts({ navigation = false } = {}) {
-  return [...(navigation ? NAVIGATION_RENDER_PARTS : CONTENT_RENDER_PARTS)];
+export function getGmControlPanelRenderParts({ navigation = false, activeTab = "", previousTab = "" } = {}) {
+  const tabParts = [previousTab, activeTab]
+    .filter((tab, index, list) => GM_CONTROL_PANEL_TAB_PARTS.includes(tab) && list.indexOf(tab) === index);
+  if (!navigation) return [...tabParts.filter((tab) => tab === activeTab), GM_CONTROL_PANEL_PARTS.FOOTER];
+  return [GM_CONTROL_PANEL_PARTS.TABS, ...tabParts, GM_CONTROL_PANEL_PARTS.FOOTER];
 }
 
 export function createGmControlPanelController({
@@ -32,13 +37,20 @@ export function createGmControlPanelController({
   function refresh({ focusSelector = "", navigation = false } = {}) {
     normalizeState(state);
     state.lastRefreshedAt = Date.now();
-    const tabChanged = renderedTab !== state.activeTab;
+    const previousTab = renderedTab;
+    const tabChanged = previousTab !== state.activeTab;
     renderedTab = state.activeTab;
     if (!application?.rendered) return Promise.resolve(application);
     return application.render({
-      parts: getGmControlPanelRenderParts({ navigation: navigation || tabChanged }),
+      parts: getGmControlPanelRenderParts({
+        navigation: navigation || tabChanged,
+        activeTab: state.activeTab,
+        previousTab: tabChanged ? previousTab : ""
+      }),
       focusSelector
     }).catch((error) => {
+      // The old tab may still be visible; the next refresh treats the tab as changed again.
+      if (tabChanged && renderedTab === state.activeTab) renderedTab = previousTab;
       onRenderError?.(error);
       return application;
     });

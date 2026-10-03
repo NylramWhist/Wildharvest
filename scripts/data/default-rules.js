@@ -2,7 +2,7 @@ export const DEFAULT_RULES_CONFIG = {
   lootMode: "rarity",
   playerRollRules: {
     allowExtraModifier: true,
-    maxExtraModifier: 20,
+    maxExtraModifier: 100,
     allowRollModeSelection: true
   },
   lootPointBrackets: [
@@ -27,6 +27,8 @@ export const DEFAULT_RULES_CONFIG = {
   ],
   valueRules: {
     tolerancePercent: 10,
+    maxDistinctItems: 20,
+    maxTotalItems: 300,
     brackets: [
       { lootPoints: 0, targetGp: 0 },
       { lootPoints: 1, targetGp: 1 },

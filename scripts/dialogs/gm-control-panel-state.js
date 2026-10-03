@@ -10,12 +10,6 @@ export const GM_SEND_MODES = Object.freeze({
   SELECTED_PLAYERS: "selected-players"
 });
 
-export const GM_LIVE_FILTERS = Object.freeze({
-  ALL: "all",
-  COMPLETED: "completed",
-  PENDING: "pending"
-});
-
 export const GM_RESPONSE_FILTERS = Object.freeze({
   ALL: "all",
   COMPLETED: "completed",
@@ -72,7 +66,6 @@ export function getResponseEntryKey(sessionId, entry) {
 
 export function ensureStateSelections(state, {
   activePlayers = [],
-  liveFilters = Object.values(GM_LIVE_FILTERS),
   responseFilters = Object.values(GM_RESPONSE_FILTERS),
   presetFilters = Object.values(GM_PRESET_FILTERS)
 } = {}) {
@@ -89,10 +82,6 @@ export function ensureStateSelections(state, {
     state.expandedResponseKey = "";
   } else if (!sessions.some((session) => session.id === state.selectedSessionId)) {
     state.selectedSessionId = sessions[sessions.length - 1]?.id ?? sessions[0]?.id ?? "";
-  }
-
-  if (!liveFilters.includes(state.liveFilter)) {
-    state.liveFilter = GM_LIVE_FILTERS.ALL;
   }
 
   if (!responseFilters.includes(state.responseFilter)) {
@@ -126,23 +115,6 @@ export function ensureStateSelections(state, {
   state.presetFilter = String(state.presetFilter ?? "");
   state.historyFilter = String(state.historyFilter ?? "");
   state.historyEntryKey = String(state.historyEntryKey ?? "");
-}
-
-export function getFilteredLiveEntries(session, liveFilter, {
-  completedFilter = GM_LIVE_FILTERS.COMPLETED,
-  pendingFilter = GM_LIVE_FILTERS.PENDING,
-  pendingStatuses = ["pending", "accepted", "resolving"]
-} = {}) {
-  const entries = Object.values(session?.offers ?? {});
-  if (liveFilter === completedFilter) {
-    return entries.filter((entry) => entry.status === "completed");
-  }
-
-  if (liveFilter === pendingFilter) {
-    return entries.filter((entry) => pendingStatuses.includes(entry.status));
-  }
-
-  return entries;
 }
 
 export function getFilteredResponseEntries(session, responseFilter, {

@@ -1,0 +1,16 @@
+<div class="wildharvest-chat-result">
+  <header class="wildharvest-chat-result__header">
+    <i class="fa-solid fa-seedling" aria-hidden="true"></i>
+    <strong>{{activityName}}</strong>
+  </header>
+  <p class="wildharvest-chat-result__roll">{{rollText}}</p>
+  {{#if items.length}}
+  <ul class="wildharvest-chat-result__items">
+    {{#each items}}<li>{{name}} <span>×{{quantity}}</span></li>
+    {{/each}}
+  </ul>
+  {{#if moreText}}<p class="wildharvest-chat-result__more">{{moreText}}</p>{{/if}}
+  {{else}}
+  <p class="wildharvest-chat-result__empty">{{emptyText}}</p>
+  {{/if}}
+</div>

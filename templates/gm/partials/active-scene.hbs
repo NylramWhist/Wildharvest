@@ -1,0 +1,31 @@
+{{#if session}}
+<section class="wildharvest-gm-active-scene">
+  <div class="wildharvest-gm-active-scene__icon">
+    <i class="{{sceneIcon}} wildharvest-gm-active-scene__asset" aria-hidden="true"></i>
+  </div>
+  <div class="wildharvest-gm-active-scene__content">
+    <h4>{{localize "WILDHARVEST.Dialog.ControlPanel.ActiveSceneTitle"}}</h4>
+    <strong>{{sessionName}}</strong>
+    <p>{{localize "WILDHARVEST.Dialog.Responses.Created"}}: {{createdAt}}</p>
+    <p>{{localize "WILDHARVEST.Dialog.ControlPanel.SendTo"}}: {{modeLabel}}</p>
+    <p>{{progress}}</p>
+  </div>
+  <div class="wildharvest-gm-active-scene__aside">
+    <span class="wildharvest-gm-status {{statusClass}}">
+      <i class="{{statusIcon}} wildharvest-gm-status__asset" aria-hidden="true"></i>
+      {{statusLabel}}
+    </span>
+    {{> wildharvest.gmSessionActions actions}}
+  </div>
+</section>
+{{else}}
+<section class="wildharvest-gm-active-scene wildharvest-gm-active-scene--empty">
+  <div class="wildharvest-gm-active-scene__icon">
+    <i class="{{@root.icons.launchScene}} wildharvest-gm-active-scene__asset" aria-hidden="true"></i>
+  </div>
+  <div class="wildharvest-gm-active-scene__content">
+    <h4>{{localize "WILDHARVEST.Dialog.ControlPanel.ActiveSceneTitle"}}</h4>
+    <p>{{localize "WILDHARVEST.Dialog.ControlPanel.ActiveSceneNone"}}</p>
+  </div>
+</section>
+{{/if}}

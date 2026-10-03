@@ -1,10 +1,12 @@
+import { compareByModuleLocale } from "../i18n.js";
+
 export function getAvailableActors() {
   const actors = game.actors?.contents ?? [];
   const filtered = game.user.isGM
     ? actors
     : actors.filter((actor) => actor.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER));
 
-  const sorted = [...filtered].sort((left, right) => left.name.localeCompare(right.name, "pl"));
+  const sorted = [...filtered].sort((left, right) => compareByModuleLocale(left.name, right.name));
   const preferredId = game.user.character?.id;
 
   if (!preferredId) return sorted;
@@ -30,7 +32,7 @@ export function getLinkedPlayerCharacters() {
     actors.push(actor);
   }
 
-  return actors.sort((left, right) => left.name.localeCompare(right.name, "pl"));
+  return actors.sort((left, right) => compareByModuleLocale(left.name, right.name));
 }
 
 export function getDefaultActorId(actors) {

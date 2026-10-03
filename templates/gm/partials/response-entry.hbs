@@ -1,0 +1,46 @@
+<article class="wildharvest-gm-response-entry {{entryClass}}{{#if hasResult}} has-result{{/if}}{{#unless expanded}} is-collapsed{{/unless}}">
+  <div class="wildharvest-gm-response-entry__main">
+    <div class="wildharvest-gm-response-entry__dot" aria-hidden="true"></div>
+    <div class="wildharvest-gm-response-entry__identity">
+      <strong>{{userName}}</strong>
+      <p>{{actorName}}</p>
+    </div>
+    {{#if hasResult}}
+    <div class="wildharvest-gm-response-entry__stat">
+      <span>{{localize "WILDHARVEST.Dialog.Result.FinalResult"}}</span>
+      <strong>{{rollTotal}}</strong>
+    </div>
+    <div class="wildharvest-gm-response-entry__stat">
+      <span>{{localize "WILDHARVEST.Dialog.Result.LootPoints"}}</span>
+      <strong>{{lootPoints}}</strong>
+    </div>
+    {{else}}
+    <div class="wildharvest-gm-response-entry__waiting">
+      {{waitingText}}
+    </div>
+    {{/if}}
+    <span class="wildharvest-gm-status {{status.className}}">
+      <i class="{{status.iconClass}}" aria-hidden="true"></i>
+      {{status.label}}
+    </span>
+    <button type="button" class="wildharvest-gm-response-entry__toggle" data-action="gm-toggle-response" data-session-id="{{sessionId}}" data-entry-user-id="{{userId}}" aria-expanded="{{#if expanded}}true{{else}}false{{/if}}" aria-label="{{toggleLabel}}" title="{{toggleLabel}}">
+      <i class="fa-solid {{#if expanded}}fa-chevron-up{{else}}fa-chevron-down{{/if}}" aria-hidden="true"></i>
+    </button>
+  </div>
+  {{#if hasResult}}
+  <div class="wildharvest-gm-response-entry__details">
+    <strong>{{localize "WILDHARVEST.Dialog.Responses.Rewards"}}</strong>
+    <p>{{rewardsText}}</p>
+    <span>{{modifierAuditText}}</span>
+    <span>{{localize "WILDHARVEST.Dialog.Search.RollMode"}}: {{rollModeLabel}}</span>
+    <span>{{localize "WILDHARVEST.Dialog.Search.LootDestination"}}: {{destinationName}}</span>
+    {{#if updatedAt}}<span>{{localize "WILDHARVEST.Dialog.Responses.Updated"}}: {{updatedAt}}</span>{{/if}}
+  </div>
+  {{else}}
+  <div class="wildharvest-gm-response-entry__details">
+    <strong>{{localize "WILDHARVEST.Dialog.Responses.Status"}}</strong>
+    <p>{{waitingText}}</p>
+    {{#if updatedAt}}<span>{{localize "WILDHARVEST.Dialog.Responses.Updated"}}: {{updatedAt}}</span>{{/if}}
+  </div>
+  {{/if}}
+</article>

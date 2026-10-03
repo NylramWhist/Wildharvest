@@ -1,0 +1,95 @@
+<section id="wildharvest-gm-tabpanel-{{tabId}}" class="wildharvest-gm-panel__body" role="tabpanel" aria-labelledby="wildharvest-gm-tab-{{tabId}}" tabindex="0"{{#unless active}} hidden{{/unless}}>
+  {{#if active}}
+  <section class="wildharvest-gm-card wildharvest-gm-card--presets">
+    <div class="wildharvest-gm-card__header">
+      <div>
+        <h3>{{localize "WILDHARVEST.Dialog.ControlPanel.PresetsTitle"}}</h3>
+        <p>{{localize "WILDHARVEST.Dialog.ControlPanel.PresetsHint"}}</p>
+      </div>
+      <div class="wildharvest-inline-actions wildharvest-inline-actions--end">
+        <button type="button" class="button default" data-action="gm-create-preset">
+          <i class="fa-solid fa-plus" aria-hidden="true"></i>
+          {{localize "WILDHARVEST.Dialog.ControlPanel.CreatePreset"}}
+        </button>
+        {{#if backups}}
+        <button type="button" class="button" data-action="gm-delete-backups" title="{{backups.hint}}">
+          <i class="fa-solid fa-box-archive" aria-hidden="true"></i>
+          {{backups.label}}
+        </button>
+        {{/if}}
+        <button type="button" class="button" data-action="gm-export-config">
+          <i class="fa-solid fa-file-export" aria-hidden="true"></i>
+          {{localize "WILDHARVEST.Dialog.ControlPanel.ExportConfig"}}
+        </button>
+        <button type="button" class="button" data-action="gm-import-config">
+          <i class="fa-solid fa-file-import" aria-hidden="true"></i>
+          {{localize "WILDHARVEST.Dialog.ControlPanel.ImportConfig"}}
+        </button>
+      </div>
+    </div>
+    <div class="wildharvest-gm-preset-toolbar">
+      <div class="form-group wildharvest-form-group--tight wildharvest-gm-preset-search">
+        <label>{{localize "WILDHARVEST.Dialog.ControlPanel.PresetSearch"}}</label>
+        <input type="search" name="gmPresetFilter" value="{{presetFilter}}" placeholder="{{localize "WILDHARVEST.Dialog.ControlPanel.PresetSearchPlaceholder"}}">
+      </div>
+      {{> wildharvest.gmFilterButtons filters}}
+    </div>
+    <div class="wildharvest-gm-preset-table" role="table" aria-label="{{localize "WILDHARVEST.Dialog.ControlPanel.PresetsTitle"}}">
+      <div class="wildharvest-gm-preset-table__header" role="row">
+        <span role="columnheader">{{localize "WILDHARVEST.Dialog.ControlPanel.PresetColumn"}}</span>
+        <span role="columnheader">{{localize "WILDHARVEST.Dialog.ControlPanel.Skill"}}</span>
+        <span role="columnheader">{{localize "WILDHARVEST.Dialog.ControlPanel.LootPool"}}</span>
+        <span role="columnheader">{{localize "WILDHARVEST.Dialog.Responses.Status"}}</span>
+        <span role="columnheader">{{localize "WILDHARVEST.Table.Actions"}}</span>
+      </div>
+      {{#if presets.length}}
+      <div class="wildharvest-gm-preset-table__body" role="rowgroup">
+        {{#each presets}}
+        <article class="wildharvest-gm-preset-row{{#if needsAttention}} needs-attention{{else}} is-ready{{/if}}" role="row">
+          <div class="wildharvest-gm-preset-cell wildharvest-gm-preset-cell--identity" role="cell" data-label="{{localize "WILDHARVEST.Dialog.ControlPanel.PresetColumn"}}">
+            <div class="wildharvest-gm-preset-row__icon wh-icon-frame" aria-hidden="true">
+              <i class="{{@root.icons.activity}} wh-icon wildharvest-gm-preset-row__asset" aria-hidden="true"></i>
+            </div>
+            <div class="wildharvest-gm-preset-row__copy">
+              <strong>{{name}}</strong>
+              <p title="{{description}}">{{description}}</p>
+              {{#if statusDetail}}<p class="wildharvest-gm-preset-status__detail"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> {{statusDetail}}</p>{{/if}}
+            </div>
+          </div>
+          <div class="wildharvest-gm-preset-cell wildharvest-gm-preset-cell--skill" role="cell" data-label="{{localize "WILDHARVEST.Dialog.ControlPanel.Skill"}}">
+            <strong>{{skillLabel}}</strong>
+            {{#if difficultyText}}<span class="wildharvest-gm-preset-difficulty">{{difficultyText}}</span>{{/if}}
+          </div>
+          <div class="wildharvest-gm-preset-cell wildharvest-gm-preset-cell--pool" role="cell" data-label="{{localize "WILDHARVEST.Dialog.ControlPanel.LootPool"}}">
+            <span title="{{packSummary}}">{{packSummary}}</span>
+          </div>
+          <div class="wildharvest-gm-preset-cell wildharvest-gm-preset-cell--status" role="cell" data-label="{{localize "WILDHARVEST.Dialog.Responses.Status"}}">
+            <span class="wildharvest-gm-preset-status{{#if needsAttention}} needs-attention{{else}} is-ready{{/if}}" title="{{statusTitle}}">
+              <i class="fa-solid {{#if needsAttention}}fa-triangle-exclamation{{else}}fa-check{{/if}}" aria-hidden="true"></i>
+              {{statusLabel}}
+            </span>
+          </div>
+          <div class="wildharvest-gm-preset-cell wildharvest-gm-preset-cell--actions" role="cell" data-label="{{localize "WILDHARVEST.Table.Actions"}}">
+            <button type="button" class="button" data-action="gm-send-preset" data-preset-id="{{id}}" aria-label="{{actionLabels.send}}" title="{{actionLabels.send}}"{{#if needsAttention}} disabled{{/if}}>
+              <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="button" data-action="gm-edit-preset" data-preset-id="{{id}}" aria-label="{{actionLabels.edit}}" title="{{actionLabels.edit}}">
+              <i class="fa-solid fa-pen" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="button" data-action="gm-duplicate-preset" data-preset-id="{{id}}" aria-label="{{actionLabels.duplicate}}" title="{{actionLabels.duplicate}}">
+              <i class="fa-solid fa-copy" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="button wildharvest-gm-preset-action--danger" data-action="gm-delete-preset" data-preset-id="{{id}}" aria-label="{{actionLabels.remove}}" title="{{actionLabels.remove}}">
+              <i class="fa-solid fa-trash" aria-hidden="true"></i>
+            </button>
+          </div>
+        </article>
+        {{/each}}
+      </div>
+      {{else}}
+      <p class="wildharvest-empty wildharvest-gm-preset-table__empty">{{localize "WILDHARVEST.Dialog.ControlPanel.NoPresetSearchResults"}}</p>
+      {{/if}}
+    </div>
+  </section>
+  {{/if}}
+</section>

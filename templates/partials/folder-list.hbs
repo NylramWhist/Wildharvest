@@ -1,0 +1,22 @@
+{{#if packs.length}}
+{{#each packs}}
+<fieldset class="wildharvest-gm-folder-group">
+  <legend class="wildharvest-gm-folder-group__title">{{name}}</legend>
+  <div class="wildharvest-gm-compendium-list wildharvest-gm-folder-list">
+    {{#each folders}}
+    <label class="wildharvest-gm-compendium-option wildharvest-gm-folder-option{{#if missing}} is-not-lootable{{/if}}{{#if included}} is-included{{/if}}" style="--wh-folder-depth: {{depth}}">
+      <input type="checkbox" class="wh-check" name="presetFolderId" value="{{uuid}}"{{#if selected}} checked{{/if}}>
+      <span>
+        <strong>{{name}}</strong>
+        {{#if parentPath}}<small>{{parentPath}}</small>{{/if}}
+        {{#if included}}<small class="wildharvest-gm-folder-included">{{../../includedText}}</small>{{/if}}
+        {{#if missing}}<small class="wildharvest-gm-compendium-warning"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> {{../../missingText}}</small>{{/if}}
+      </span>
+    </label>
+    {{/each}}
+  </div>
+</fieldset>
+{{/each}}
+{{else}}
+<p class="wildharvest-empty">{{emptyText}}</p>
+{{/if}}

@@ -1,17 +1,27 @@
 import { getDefaultActorId, getAvailableActors } from "../helpers/actor-utils.js";
+import { ACTIVITY_CATALOG_LOCATION_ID } from "../helpers/activity-presets.js";
 import { MODULE_ID } from "../constants.js";
 import { getActivitySkillLabel, getActorSkillModifier } from "../helpers/dnd5e-support.js";
-import { getActorContainers } from "../helpers/inventory-container-core.js";
+import { getActorContainers, getContainerOptionLabels } from "../helpers/inventory-container-core.js";
 import { getRewardDisplayName } from "../helpers/reward-utils.js";
 import { addRewardsToActor, appendSearchLogWithRetry } from "../helpers/resource-store.js";
 import {
   MAX_PLAYER_EXTRA_MODIFIER,
   normalizePlayerRollPolicy
 } from "../helpers/search-authority-core.js";
-import { executeSearch } from "../helpers/search-engine.js";
+import { executeSearch, getLootResultMessage } from "../helpers/search-engine.js";
+import { getLootResultTone } from "../helpers/search-engine-core.js";
+import {
+  getFirstLootThreshold,
+  getRewardStackValue,
+  groupRewardsByType,
+  sortRewardsByValue
+} from "../helpers/result-view-core.js";
 import { notifyError } from "../helpers/notification-utils.js";
-import { getModuleLocaleTag, t } from "../i18n.js";
-import { getLocations, getRulesConfig } from "../settings.js";
+import { renderModuleTemplate } from "../helpers/templates.js";
+import { formatModuleNumber, t } from "../i18n.js";
+import { getChatResultMode, getLocations, getRulesConfig } from "../settings.js";
+import { getChatResultItems } from "../helpers/chat-result-core.js";
 import {
   addWindowClasses,
   escapeHtml,
@@ -20,15 +30,12 @@ import {
 } from "./dialog-utils.js";
 
 const DialogV2 = foundry.applications.api.DialogV2;
-const ACTIVITY_CATALOG_LOCATION_ID = "wildharvest-options";
-const PLAYER_UI_ASSETS = Object.freeze({
-  activity: "modules/wildharvest/assets/ui/icons/icon-activity.svg",
-  wildharvest: "modules/wildharvest/assets/ui/icons/icon-wildharvest.svg",
-  character: "modules/wildharvest/assets/ui/icons/icon-character.svg",
-  roll: "modules/wildharvest/assets/ui/icons/icon-roll.svg",
-  result: "modules/wildharvest/assets/ui/icons/icon-result.svg",
-  rewards: "modules/wildharvest/assets/ui/icons/icon-rewards.svg",
-  completed: "modules/wildharvest/assets/ui/icons/icon-completed.svg"
+// Font Awesome classes (bundled with Foundry) for the player windows.
+const PLAYER_UI_ICONS = Object.freeze({
+  roll: "fa-solid fa-dice-d20",
+  result: "fa-solid fa-box-open",
+  rewards: "fa-solid fa-gem",
+  completed: "fa-solid fa-circle-check"
 });
 
 function formatSigned(value) {
@@ -37,16 +44,6 @@ function formatSigned(value) {
 
 function getDefaultItemImage() {
   return CONFIG.Item?.documentClass?.DEFAULT_ICON ?? "icons/svg/item-bag.svg";
-}
-
-function renderPlayerInlineAsset(imagePath, className, alt = "") {
-  if (!imagePath) return "";
-  return `<img class="${escapeHtml(className)}" src="${escapeHtml(imagePath)}" alt="${escapeHtml(alt)}">`;
-}
-
-function isHiddenActivityCatalog(location) {
-  return String(location?.id ?? "").trim() === ACTIVITY_CATALOG_LOCATION_ID
-    || String(location?.name ?? "").trim() === t("WILDHARVEST.Default.ActivityCatalogName");
 }
 
 function getRollModeLabel(rollMode) {
@@ -68,222 +65,88 @@ function buildEffectiveActivity(location, activity, override = {}) {
   };
 }
 
-function renderActorOptions(actors, selectedActorId, allowNoActor = true) {
-  const blankOption = allowNoActor
-    ? `<option value="">${escapeHtml(t("WILDHARVEST.Dialog.Search.NoCharacterSave"))}</option>`
-    : "";
-  const actorOptions = actors
-    .map((actor) => {
-      const selected = actor.id === selectedActorId ? " selected" : "";
-      return `<option value="${escapeHtml(actor.id)}"${selected}>${escapeHtml(actor.name)}</option>`;
-    })
-    .join("");
-
-  return `${blankOption}${actorOptions}`;
+function getContainerOptionsContext(actor, selectedContainerId = "") {
+  const containers = getActorContainers(actor);
+  const labels = getContainerOptionLabels(actor, containers, (name, count) => (
+    t("WILDHARVEST.Dialog.Search.ContainerWithCount", { name, count })
+  ));
+  return {
+    rootSelected: !containers.some((container) => container.id === selectedContainerId),
+    mainInventory: t("WILDHARVEST.Dialog.Search.MainInventory"),
+    containers: containers.map((container) => ({
+      id: container.id,
+      label: labels.get(container.id) ?? container.name,
+      selected: container.id === selectedContainerId
+    }))
+  };
 }
 
 function renderContainerOptions(actor, selectedContainerId = "") {
-  const containers = getActorContainers(actor);
-  const rootSelected = containers.some((container) => container.id === selectedContainerId) ? "" : " selected";
-  const containerOptions = containers.map((container) => {
-    const selected = container.id === selectedContainerId ? " selected" : "";
-    return `<option value="${escapeHtml(container.id)}"${selected}>${escapeHtml(container.name)}</option>`;
-  }).join("");
-
-  return `<option value=""${rootSelected}>${escapeHtml(t("WILDHARVEST.Dialog.Search.MainInventory"))}</option>${containerOptions}`;
+  return renderModuleTemplate("wildharvest.containerOptions", getContainerOptionsContext(actor, selectedContainerId));
 }
 
-function renderActorSection(actors, selectedActorId, selectedContainerId = "", allowNoActor = true) {
-  const selectedActor = actors.find((actor) => actor.id === selectedActorId) ?? null;
-  const hasContainers = getActorContainers(selectedActor).length > 0;
-  return `
-    <section class="wildharvest-player-card">
-      ${renderPlayerSectionTitle({
-        title: t("WILDHARVEST.Dialog.Search.Actor"),
-        icon: "fa-solid fa-user",
-        imagePath: PLAYER_UI_ASSETS.character
-      })}
-      <div class="form-group wildharvest-form-group--tight">
-        <label>${escapeHtml(t("WILDHARVEST.Dialog.Search.Actor"))}</label>
-        <select name="actorId">
-          ${renderActorOptions(actors, selectedActorId, allowNoActor)}
-        </select>
-      </div>
-      <div class="form-group wildharvest-form-group--tight" data-loot-destination${hasContainers ? "" : " hidden"}>
-        <label>${escapeHtml(t("WILDHARVEST.Dialog.Search.LootDestination"))}</label>
-        <select name="containerId">
-          ${renderContainerOptions(selectedActor, selectedContainerId)}
-        </select>
-        <p class="notes">${escapeHtml(t("WILDHARVEST.Dialog.Search.LootDestinationHint"))}</p>
-      </div>
-    </section>
-  `;
+function getResultRewardCount(result) {
+  return Math.max(result.rewards.length, Math.trunc(Number(result.rewardCount) || 0));
 }
 
-function renderLocationOptions(locations, selectedLocationId) {
-  return locations
-    .map((location) => {
-      const selected = location.id === selectedLocationId ? " selected" : "";
-      return `<option value="${escapeHtml(location.id)}"${selected}>${escapeHtml(location.name)}</option>`;
-    })
-    .join("");
+// Name of a dnd5e item type for the result groups (CONFIG.Item.typeLabels holds translation keys).
+function getItemTypeLabel(type) {
+  if (type === "other") return t("WILDHARVEST.Dialog.Result.GroupOther");
+  const key = CONFIG.Item?.typeLabels?.[type];
+  return key ? game.i18n.localize(key) : type;
 }
 
-function renderActivityOptions(location, selectedActivityId) {
-  return location.activities
-    .map((activity) => {
-      const selected = activity.id === selectedActivityId ? " selected" : "";
-      return `<option value="${escapeHtml(activity.id)}"${selected}>${escapeHtml(activity.name)}</option>`;
-    })
-    .join("");
-}
-
-function renderRollModeOptions(selectedRollMode = "normal") {
-  return ["normal", "advantage", "disadvantage"]
-    .map((mode) => {
-      const selected = mode === selectedRollMode ? " selected" : "";
-      return `<option value="${escapeHtml(mode)}"${selected}>${escapeHtml(getRollModeLabel(mode))}</option>`;
-    })
-    .join("");
-}
-
-function renderPlayerHero({ title, subtitle, icon = "fa-solid fa-compass", imagePath = "" }) {
-  const emblemClassName = imagePath
-    ? "wildharvest-player-hero__emblem wildharvest-player-hero__emblem--image"
-    : "wildharvest-player-hero__emblem";
-
-  return `
-    <section class="wildharvest-player-hero">
-      <div class="${emblemClassName}">
-        ${imagePath
-          ? `<img class="wildharvest-player-hero__asset" src="${escapeHtml(imagePath)}" alt="">`
-          : `<i class="${escapeHtml(icon)}" aria-hidden="true"></i>`}
-      </div>
-      <div class="wildharvest-player-hero__copy">
-        <h2>${escapeHtml(title)}</h2>
-        ${subtitle ? `<p data-search-hero-subtitle>${escapeHtml(subtitle)}</p>` : ""}
-        <div class="wildharvest-player-hero__divider" aria-hidden="true"></div>
-      </div>
-    </section>
-  `;
-}
-
-function renderPlayerSectionTitle({ title, icon = "", imagePath = "" }) {
-  return `
-    <div class="wildharvest-player-section-title">
-      <span class="wildharvest-player-section-title__badge">
-        ${imagePath
-          ? `<img class="wildharvest-player-section-title__asset" src="${escapeHtml(imagePath)}" alt="">`
-          : `<i class="${escapeHtml(icon)} wildharvest-player-section-title__icon" aria-hidden="true"></i>`}
-      </span>
-      <span>${escapeHtml(title)}</span>
-    </div>
-  `;
-}
-
-function renderRollSection({
-  baseModifier = 0,
-  selectedRollMode = "normal",
-  rollPolicy = {
-    allowExtraModifier: true,
-    maxExtraModifier: MAX_PLAYER_EXTRA_MODIFIER,
-    allowRollModeSelection: true
+// W-10/W-11 (1.33.0): totals, the most valuable stacks first, groups by item type, and for an
+// empty result how far the roll was from the first Loot Point.
+function getResultItemsContext(result, rewardCount, omittedCount) {
+  const sorted = sortRewardsByValue(result.rewards);
+  const priced = sorted.some((reward) => getRewardStackValue(reward) !== null);
+  const summary = [];
+  if (!omittedCount && sorted.length) {
+    const quantity = sorted.reduce((sum, reward) => sum + (Number(reward.quantity) || 1), 0);
+    summary.push(t("WILDHARVEST.Dialog.Result.SummaryItems", { quantity: formatModuleNumber(quantity) }));
   }
-} = {}) {
-  const normalizedPolicy = normalizePlayerRollPolicy(rollPolicy);
-  const extraModifierMarkup = normalizedPolicy.allowExtraModifier
-    ? `
-      <div class="form-group wildharvest-form-group--tight">
-        <label>${escapeHtml(t("WILDHARVEST.Dialog.Search.ExtraModifier"))}</label>
-        <input type="number" name="extraModifier" step="1" min="-${escapeHtml(String(normalizedPolicy.maxExtraModifier))}" max="${escapeHtml(String(normalizedPolicy.maxExtraModifier))}" value="0">
-        <p class="notes">${escapeHtml(t("WILDHARVEST.Dialog.Search.ExtraModifierLimit", { max: normalizedPolicy.maxExtraModifier }))}</p>
-      </div>
-    `
-    : `
-      <input type="hidden" name="extraModifier" value="0">
-      <p class="notes">${escapeHtml(t("WILDHARVEST.Dialog.Search.ExtraModifierLocked"))}</p>
-    `;
-  const rollModeMarkup = normalizedPolicy.allowRollModeSelection
-    ? `
-      <div class="form-group wildharvest-form-group--tight">
-        <label>${escapeHtml(t("WILDHARVEST.Dialog.Search.RollMode"))}</label>
-        <select name="rollMode">
-          ${renderRollModeOptions(selectedRollMode)}
-        </select>
-      </div>
-    `
-    : `
-      <input type="hidden" name="rollMode" value="normal">
-      <p class="notes">${escapeHtml(t("WILDHARVEST.Dialog.Search.RollModeLocked"))}</p>
-    `;
+  const totalValue = Number(result.lootSummary?.totalValueGp);
+  if (rewardCount && Number.isFinite(totalValue) && totalValue > 0) {
+    summary.push(t("WILDHARVEST.Dialog.Result.SummaryValue", { value: formatModuleNumber(totalValue) }));
+  }
+  const groups = groupRewardsByType(sorted).map((group) => ({
+    label: group.type ? getItemTypeLabel(group.type) : "",
+    count: String(group.rewards.length),
+    rewards: group.rewards.map(getRewardContext)
+  }));
 
-  return `
-    <section class="wildharvest-player-card">
-      ${renderPlayerSectionTitle({
-        title: t("WILDHARVEST.Dialog.Search.RollSection"),
-        icon: "fa-solid fa-dice-d20",
-        imagePath: PLAYER_UI_ASSETS.roll
-      })}
-      <div class="wildharvest-player-metrics">
-        <div class="wildharvest-player-metric wildharvest-player-metric--primary">
-          <span>${escapeHtml(t("WILDHARVEST.Dialog.Search.BaseModifier"))}</span>
-          <strong data-base-modifier>${escapeHtml(formatSigned(baseModifier))}</strong>
-        </div>
-      </div>
-      <input type="hidden" name="baseSkillModifier" value="${escapeHtml(String(baseModifier))}">
-      ${extraModifierMarkup}
-      ${rollModeMarkup}
-    </section>
-  `;
-}
-
-function renderResultItems(result) {
-  if (!result.rewards.length) {
-    return `
-      <div class="wildharvest-result-empty">
-        ${renderPlayerInlineAsset(PLAYER_UI_ASSETS.rewards, "wildharvest-result-empty__asset")}
-        <p>${escapeHtml(t("WILDHARVEST.Dialog.Result.NoItems"))}</p>
-      </div>
-    `;
+  let missingText = "";
+  const lootPoints = Number(result.lootSummary?.lootPoints ?? 0);
+  const firstThreshold = getFirstLootThreshold(getRulesConfig().lootPointBrackets);
+  // 1.35.0: the place's difficulty moves the threshold.
+  const threshold = firstThreshold === null ? null : firstThreshold + (Number(result.lootSummary?.difficulty) || 0);
+  const rollTotal = Number(result.roll?.total ?? 0);
+  if (!rewardCount && lootPoints <= 0 && threshold !== null && rollTotal < threshold) {
+    missingText = t("WILDHARVEST.Dialog.Result.MissingForFirstPoint", {
+      needed: formatModuleNumber(threshold),
+      missing: formatModuleNumber(threshold - rollTotal)
+    });
   }
 
-  const previewRewards = result.rewards.slice(0, 8);
-  const previewMarkup = previewRewards.map((reward) => `
-    <article class="wildharvest-result-preview-item" title="${escapeHtml(getRewardDisplayName(reward))}">
-      <img src="${escapeHtml(reward.img || getDefaultItemImage())}" alt="${escapeHtml(getRewardDisplayName(reward))}">
-      <strong>${escapeHtml(getRewardDisplayName(reward))}</strong>
-      <span>x${escapeHtml(String(reward.quantity ?? 1))}</span>
-    </article>
-  `).join("");
-  const detailMarkup = result.rewards.map((reward) => `
-      <article class="wildharvest-result-item">
-        <div class="wildharvest-result-item__status">
-          ${renderPlayerInlineAsset(PLAYER_UI_ASSETS.completed, "wildharvest-result-item__status-asset")}
-        </div>
-        <img
-          class="wildharvest-result-item__image"
-          src="${escapeHtml(reward.img || getDefaultItemImage())}"
-          alt="${escapeHtml(getRewardDisplayName(reward))}"
-        >
-        <div class="wildharvest-result-item__copy">
-          <strong>${escapeHtml(getRewardDisplayName(reward))}</strong>
-          ${reward.unitValueGp !== undefined
-            ? `<small>${escapeHtml(t("WILDHARVEST.Dialog.Result.UnitValueGp", { value: reward.unitValueGp }))}</small>`
-            : ""}
-        </div>
-        <span class="wildharvest-result-item__quantity">x${escapeHtml(String(reward.quantity ?? 1))}</span>
-      </article>
-    `).join("");
+  return {
+    summary: summary.join(" · "),
+    previewLabel: priced ? t("WILDHARVEST.Dialog.Result.MostValuable") : "",
+    previewRewards: sorted.slice(0, 8).map(getRewardContext),
+    groups,
+    missingText
+  };
+}
 
-  return `
-    <div class="wildharvest-result-preview-grid">
-      ${previewMarkup}
-    </div>
-    <details class="wildharvest-result-details">
-      <summary>${escapeHtml(t("WILDHARVEST.Dialog.Result.ViewAll", { count: result.rewards.length }))}</summary>
-      <div class="wildharvest-result-list">${detailMarkup}</div>
-    </details>
-  `;
+function getRewardContext(reward) {
+  return {
+    name: getRewardDisplayName(reward),
+    img: reward.img || getDefaultItemImage(),
+    quantity: String(reward.quantity ?? 1),
+    unitValue: reward.unitValueGp !== undefined
+      ? t("WILDHARVEST.Dialog.Result.UnitValueGp", { value: formatModuleNumber(reward.unitValueGp) })
+      : ""
+  };
 }
 
 function buildResultStorageState(actor, storageSummary, rewardCount) {
@@ -299,17 +162,12 @@ function buildResultStorageState(actor, storageSummary, rewardCount) {
     return {
       message: t("WILDHARVEST.Dialog.Result.NoActor"),
       className: "is-muted",
-      iconPath: PLAYER_UI_ASSETS.rewards
+      icon: PLAYER_UI_ICONS.rewards
     };
   }
 
-  if (!rewardCount) {
-    return {
-      message: t("WILDHARVEST.Dialog.Result.InventoryNone"),
-      className: "is-muted",
-      iconPath: PLAYER_UI_ASSETS.rewards
-    };
-  }
+  // W-10 (1.21.3): with no rewards the item list already says so; no second message.
+  if (!rewardCount) return null;
 
   if (inventoryCount && !fallbackCount) {
     return {
@@ -317,7 +175,7 @@ function buildResultStorageState(actor, storageSummary, rewardCount) {
         ? t("WILDHARVEST.Dialog.Result.InventoryAllContainer", { containerName })
         : t("WILDHARVEST.Dialog.Result.InventoryAll"),
       className: "is-success",
-      iconPath: PLAYER_UI_ASSETS.completed
+      icon: PLAYER_UI_ICONS.completed
     };
   }
 
@@ -327,24 +185,20 @@ function buildResultStorageState(actor, storageSummary, rewardCount) {
         ? t("WILDHARVEST.Dialog.Result.InventoryPartialContainer", { containerName })
         : t("WILDHARVEST.Dialog.Result.InventoryPartial"),
       className: "is-partial",
-      iconPath: PLAYER_UI_ASSETS.completed
+      icon: PLAYER_UI_ICONS.completed
     };
   }
 
   return {
     message: t("WILDHARVEST.Dialog.Result.InventoryFallback", { actorName: actor.name }),
     className: "is-warning",
-    iconPath: PLAYER_UI_ASSETS.rewards
+    icon: PLAYER_UI_ICONS.rewards
   };
 }
 
 function getResultToneClass(result) {
-  const total = Number(result?.roll?.total ?? 0);
-  const lootPoints = Number(result?.lootSummary?.lootPoints ?? 0);
-
-  if (total >= 20 || lootPoints >= 6) return "wildharvest-player-layout--result-high";
-  if (total >= 12 || lootPoints >= 2) return "wildharvest-player-layout--result-mid";
-  return "wildharvest-player-layout--result-low";
+  const tone = getLootResultTone(result?.lootSummary?.lootPoints, getRulesConfig().lootPointBrackets);
+  return `wildharvest-player-layout--result-${tone}`;
 }
 
 function getPlayerDialogPosition(position = {}) {
@@ -355,49 +209,44 @@ function getPlayerDialogPosition(position = {}) {
 }
 
 export function openSearchResultDialog({ actor, activity, result, storageSummary }, position = {}) {
-  const storageState = buildResultStorageState(actor, storageSummary, result.rewards.length);
-  const rewardsStateClass = result.rewards.length ? "has-rewards" : "no-rewards";
+  const rewardCount = getResultRewardCount(result);
+  const storageState = buildResultStorageState(actor, storageSummary, rewardCount);
+  const rewardsStateClass = rewardCount ? "has-rewards" : "no-rewards";
   const resultToneClass = getResultToneClass(result);
+
+  // Saved history keeps a limited number of rewards; the rest are in the character's inventory.
+  const omittedCount = rewardCount - result.rewards.length;
+  const items = getResultItemsContext(result, rewardCount, omittedCount);
+  const content = renderModuleTemplate("wildharvest.playerResult", {
+    toneClass: resultToneClass,
+    rewardsStateClass,
+    icons: PLAYER_UI_ICONS,
+    hero: { title: t("WILDHARVEST.Dialog.Result.Title"), subtitle: activity?.name ?? "", icon: PLAYER_UI_ICONS.result },
+    labels: {
+      finalResult: t("WILDHARVEST.Dialog.Result.FinalResult"),
+      lootPoints: t("WILDHARVEST.Dialog.Result.LootPoints"),
+      viewAll: t("WILDHARVEST.Dialog.Result.ViewAll", { count: rewardCount }),
+      noItems: t("WILDHARVEST.Dialog.Result.NoItems")
+    },
+    rollTotal: String(result.roll.total ?? 0),
+    lootPoints: String(result.lootSummary?.lootPoints ?? 0),
+    // 1.34.0: Loot Points but no items (the GM gave nothing, or nothing fitted the GP target) would
+    // otherwise read as a good find above an empty list.
+    lootMessage: !rewardCount && Number(result.lootSummary?.lootPoints ?? 0) > 0
+      ? t("WILDHARVEST.Dialog.Result.NothingGiven")
+      : getLootResultMessage(result.lootSummary ?? { lootPoints: 0 }),
+    itemsTitle: { title: t("WILDHARVEST.Dialog.Result.FoundItemsCount", { count: rewardCount }), icon: PLAYER_UI_ICONS.rewards },
+    hasRewards: rewardCount > 0 && result.rewards.length > 0,
+    ...items,
+    omittedText: omittedCount > 0 ? t("WILDHARVEST.Dialog.Result.MoreItems", { count: omittedCount }) : "",
+    storage: storageState
+  });
 
   const dialog = new DialogV2({
     window: {
       title: t("WILDHARVEST.Dialog.Result.Title")
     },
-    content: `
-      <div class="wildharvest-dialog wildharvest-player-layout wildharvest-player-layout--result ${escapeHtml(resultToneClass)} ${escapeHtml(rewardsStateClass)}">
-        ${renderPlayerHero({
-          title: t("WILDHARVEST.Dialog.Result.Title"),
-          subtitle: activity?.name ?? "",
-          icon: "fa-solid fa-box-open",
-          imagePath: PLAYER_UI_ASSETS.result
-        })}
-        <section class="wildharvest-player-card wildharvest-player-card--accent wildharvest-player-card--result-summary">
-          <div class="wildharvest-player-stat-grid">
-            <div class="wildharvest-player-stat wildharvest-player-stat--primary">
-              <span>${escapeHtml(t("WILDHARVEST.Dialog.Result.FinalResult"))}</span>
-              <strong class="wildharvest-player-stat__value">${escapeHtml(String(result.roll.total ?? 0))}</strong>
-            </div>
-            <div class="wildharvest-player-stat">
-              <span>${escapeHtml(t("WILDHARVEST.Dialog.Result.LootPoints"))}</span>
-              <strong class="wildharvest-player-stat__value">${escapeHtml(String(result.lootSummary?.lootPoints ?? 0))}</strong>
-            </div>
-          </div>
-        </section>
-        <section class="wildharvest-player-card wildharvest-player-card--result-items">
-          ${renderPlayerSectionTitle({
-            title: t("WILDHARVEST.Dialog.Result.FoundItemsCount", { count: result.rewards.length }),
-            imagePath: PLAYER_UI_ASSETS.rewards
-          })}
-          <div class="wildharvest-result-list">
-            ${renderResultItems(result)}
-          </div>
-        </section>
-        <p class="wildharvest-player-status ${escapeHtml(storageState.className)}">
-          ${renderPlayerInlineAsset(storageState.iconPath, "wildharvest-player-status__asset")}
-          <span>${escapeHtml(storageState.message)}</span>
-        </p>
-      </div>
-    `,
+    content,
     buttons: [
       {
         action: "close",
@@ -415,7 +264,7 @@ export function openSearchResultDialog({ actor, activity, result, storageSummary
     focusDialogControl(dialog, [
       "details summary",
       "[data-action='close']",
-      ".dialog-buttons button.default"
+      ".form-footer button[autofocus]"
     ]);
   }, { once: true });
   dialog.render({ force: true });
@@ -431,10 +280,45 @@ export function openSearchResultFromLog({ actor, entry, activityName = "", posit
     result: {
       roll: { total: Number(entry.rollTotal ?? 0) },
       lootSummary: entry.lootSummary ?? { lootPoints: 0 },
-      rewards: Array.isArray(entry.rewards) ? entry.rewards : []
+      rewards: Array.isArray(entry.rewards) ? entry.rewards : [],
+      rewardCount: entry.rewardCount
     },
     storageSummary: entry.storageState ?? { inventoryCount: 0, fallbackCount: 0 }
   }, position);
+}
+
+// 1.35.0: the result as a chat message (setting "Search result in chat"), after the loot is given.
+// ChatMessage.create, getSpeaker and getWhisperRecipients are documented core API.
+async function postSearchResultToChat({ actor, activity, result }) {
+  const mode = getChatResultMode();
+  if (mode === "off" || !actor) return;
+  try {
+    const { shown, omitted } = getChatResultItems(result.rewards);
+    const content = renderModuleTemplate("wildharvest.chatResult", {
+      activityName: activity?.name ?? "",
+      rollText: t("WILDHARVEST.Chat.Roll", {
+        total: formatModuleNumber(Number(result.roll?.total ?? 0)),
+        lootPoints: formatModuleNumber(Number(result.lootSummary?.lootPoints ?? 0))
+      }),
+      items: shown.map((item) => ({ name: item.name, quantity: formatModuleNumber(item.quantity) })),
+      moreText: omitted ? t("WILDHARVEST.Chat.More", { count: omitted }) : "",
+      // Loot Points but no items: the GM gave nothing in the loot review, or nothing fitted.
+      emptyText: Number(result.lootSummary?.lootPoints ?? 0) > 0
+        ? t("WILDHARVEST.Chat.NothingGiven")
+        : t("WILDHARVEST.Chat.NoItems")
+    });
+    const messageData = {
+      content,
+      speaker: ChatMessage.implementation.getSpeaker({ actor })
+    };
+    if (mode === "gm") {
+      messageData.whisper = ChatMessage.implementation.getWhisperRecipients("GM").map((user) => user.id);
+    }
+    await ChatMessage.implementation.create(messageData);
+  } catch (error) {
+    // The loot is already given; a failed chat message must not undo or block that.
+    console.warn(`${MODULE_ID} | Failed to post the search result to chat.`, error);
+  }
 }
 
 export async function resolveSearchAsGm({
@@ -447,7 +331,13 @@ export async function resolveSearchAsGm({
   extraModifier = 0,
   rollMode,
   containerId = "",
-  resolutionId = ""
+  resolutionId = "",
+  allowSystemRoll = true,
+  // 1.34.0: called with the rolled result before anything is given; returns the rewards and loot
+  // summary to give (the GM may remove items or roll the loot again).
+  reviewLoot = null,
+  // 1.35.0: a GM's own roll from the Workbench (test roll) is not posted to chat.
+  postToChat = true
 }) {
   if (!game.user?.isGM) {
     throw new Error(t("WILDHARVEST.Errors.GmResolutionRequired"));
@@ -457,8 +347,18 @@ export async function resolveSearchAsGm({
     activity,
     skillName,
     skillModifier,
-    rollMode
+    rollMode,
+    actor: allowSystemRoll ? actor : null,
+    extraModifier
   });
+  if (typeof reviewLoot === "function") {
+    const reviewed = await reviewLoot(result);
+    if (reviewed) {
+      result.rewards = Array.isArray(reviewed.rewards) ? reviewed.rewards : [];
+      result.lootSummary = reviewed.lootSummary ?? result.lootSummary;
+      result.lootMessage = getLootResultMessage(result.lootSummary ?? { lootPoints: 0 });
+    }
+  }
   const normalizedExtraModifier = Number(extraModifier);
   const normalizedFinalModifier = Number(result.modifier ?? skillModifier ?? 0);
   const normalizedBaseModifier = Number(baseSkillModifier);
@@ -486,11 +386,11 @@ export async function resolveSearchAsGm({
     try {
       await appendSearchLogWithRetry(actor, {
         ...(resolutionId ? { sessionId: String(resolutionId) } : {}),
-        locationName: location.name,
+        // Presets share one internal location; its name is not a real place (1.21.1).
+        locationName: location.id === ACTIVITY_CATALOG_LOCATION_ID ? "" : location.name,
         activityName: activity.name,
         skillName: result.skillName,
         rollTotal: result.roll.total,
-        advantage: result.advantage,
         ...rollAudit,
         lootSummary: result.lootSummary ?? null,
         rewards: result.rewards,
@@ -500,7 +400,8 @@ export async function resolveSearchAsGm({
           containerId: storageSummary.containerId ?? "",
           containerName: storageSummary.containerName ?? ""
         },
-        timestamp: new Date().toLocaleString(getModuleLocaleTag())
+        // The entry is stored in the compact data version 2 shape (search-history-core.js).
+        timestamp: new Date().toISOString()
       });
       historyPersisted = true;
     } catch (error) {
@@ -509,6 +410,7 @@ export async function resolveSearchAsGm({
     }
   }
 
+  if (postToChat) await postSearchResultToChat({ actor, activity, result });
   ui.notifications.info(t("WILDHARVEST.Notifications.ActionResolved"));
   return {
     actor,
@@ -558,14 +460,14 @@ async function handleSubmit(form, locations, {
   }
 
   if (typeof onSubmitRequest === "function") {
-    await onSubmitRequest({
+    const outcome = await onSubmitRequest({
       actorId,
       containerId: String(formData.containerId ?? "").trim(),
       extraModifier,
       rollMode,
       dialogPosition
     });
-    return { pending: true };
+    return { pending: true, silent: Boolean(outcome?.silent) };
   }
 
   if (!game.user?.isGM) {
@@ -586,7 +488,10 @@ async function handleSubmit(form, locations, {
   const actor = formData.actorId ? game.actors.get(String(formData.actorId)) : null;
   const baseSkillModifier = Number(formData.baseSkillModifier ?? formData.skillModifier ?? 0);
   const finalSkillModifier = baseSkillModifier + extraModifier;
+  // A GM who typed a different base modifier than the sheet gets the module's own roll with it (1.24.0).
+  const sheetModifier = actor ? getActorSkillModifier(actor, effectiveActivity) : null;
   return resolveSearchAsGm({
+    allowSystemRoll: sheetModifier !== null && sheetModifier === baseSkillModifier,
     actor,
     location,
     activity: effectiveActivity,
@@ -595,7 +500,8 @@ async function handleSubmit(form, locations, {
     baseSkillModifier,
     extraModifier,
     rollMode,
-    containerId: String(formData.containerId ?? "").trim()
+    containerId: String(formData.containerId ?? "").trim(),
+    postToChat: false
   });
 }
 
@@ -606,46 +512,6 @@ async function handleSubmitSafely(form, locations, submitOptions = {}) {
     notifyError(error);
     return null;
   }
-}
-
-function refreshActivityOptions(dialog, locations) {
-  const form = getDialogForm(dialog);
-  if (!form) return;
-
-  const locationId = String(form.elements.locationId?.value ?? "");
-  const location = locations.find((entry) => entry.id === locationId) ?? locations[0];
-  const activitySelect = form.elements.activityId;
-  if (!location || !activitySelect) return;
-
-  const currentActivityId = String(activitySelect.value ?? "");
-  const hasCurrentActivity = location.activities.some((entry) => entry.id === currentActivityId);
-  const nextActivityId = hasCurrentActivity ? currentActivityId : location.activities[0]?.id;
-
-  activitySelect.innerHTML = renderActivityOptions(location, nextActivityId);
-  activitySelect.value = nextActivityId;
-
-  const baseActivity = location.activities.find((entry) => entry.id === nextActivityId) ?? location.activities[0];
-  const activity = buildEffectiveActivity(location, baseActivity);
-  syncSkillInputs(form, location, activity);
-}
-
-function attachListeners(dialog, locations) {
-  const form = getDialogForm(dialog);
-  if (!form) return;
-
-  form.elements.actorId?.addEventListener("change", () => {
-    const locationId = String(form.elements.locationId?.value ?? "");
-    const location = locations.find((entry) => entry.id === locationId) ?? locations[0];
-    const activityId = String(form.elements.activityId?.value ?? "");
-    const baseActivity = location.activities.find((entry) => entry.id === activityId) ?? location.activities[0];
-    const activity = buildEffectiveActivity(location, baseActivity);
-    syncSkillInputs(form, location, activity);
-    syncContainerDestination(form);
-  });
-  form.elements.locationId?.addEventListener("change", () => refreshActivityOptions(dialog, locations));
-  form.elements.activityId?.addEventListener("change", () => refreshActivityOptions(dialog, locations));
-  refreshActivityOptions(dialog, locations);
-  syncContainerDestination(form);
 }
 
 function setSearchCalculationState(dialog, submitButton, active, messageKey) {
@@ -690,47 +556,6 @@ function getInitialSearchContext(locations, options = {}) {
   return { location, activity };
 }
 
-function renderContextSection({ locations, location, activity, lockContext }) {
-  const skillLabel = getActivitySkillLabel(activity) || activity.skillLabel;
-  if (lockContext) {
-    return `
-      <input type="hidden" name="locationId" value="${escapeHtml(location.id)}">
-      <input type="hidden" name="activityId" value="${escapeHtml(activity.id)}">
-      <input type="hidden" name="skillId" value="${escapeHtml(activity.skillId ?? "")}">
-      <input type="hidden" name="skillName" value="${escapeHtml(skillLabel)}">
-    `;
-  }
-
-  return `
-    <section class="wildharvest-player-card">
-      ${renderPlayerSectionTitle({
-        title: t("WILDHARVEST.Dialog.Search.ContextTitle"),
-        imagePath: PLAYER_UI_ASSETS.activity
-      })}
-      <div class="form-group wildharvest-form-group--tight">
-        <label>${escapeHtml(t("WILDHARVEST.Dialog.Search.Location"))}</label>
-        <select name="locationId">
-          ${renderLocationOptions(locations, location.id)}
-        </select>
-      </div>
-      <div class="form-group wildharvest-form-group--tight">
-        <label>${escapeHtml(t("WILDHARVEST.Dialog.Search.Activity"))}</label>
-        <select name="activityId">
-          ${renderActivityOptions(location, activity.id)}
-        </select>
-      </div>
-      <input type="hidden" name="skillId" value="${escapeHtml(activity.skillId ?? "")}">
-      <input type="hidden" name="skillName" value="${escapeHtml(skillLabel)}">
-      <div class="wildharvest-player-metrics">
-        <div class="wildharvest-player-metric">
-          <span>${escapeHtml(t("WILDHARVEST.Dialog.Search.Skill"))}</span>
-          <strong data-skill-label>${escapeHtml(skillLabel)}</strong>
-        </div>
-      </div>
-    </section>
-  `;
-}
-
 function syncSkillInputs(form, location, activity) {
   const actorId = String(form.elements.actorId?.value ?? "");
   const actor = actorId ? game.actors.get(actorId) : null;
@@ -740,12 +565,10 @@ function syncSkillInputs(form, location, activity) {
   const baseModifierLabel = form.querySelector("[data-base-modifier]");
   const skillLabelOutput = form.querySelector("[data-skill-label]");
   const heroSubtitleOutput = form.querySelector("[data-search-hero-subtitle]");
-  const layoutRoot = form.closest("[data-player-lock-context]");
 
   const skillLabel = getActivitySkillLabel(activity) || activity.skillLabel || t("WILDHARVEST.Default.SkillLabel");
   const suggestedModifier = getActorSkillModifier(actor, activity);
   const normalizedModifier = suggestedModifier ?? 0;
-  const isLockContext = layoutRoot?.dataset?.playerLockContext === "true";
 
   if (skillNameInput) {
     skillNameInput.value = skillLabel;
@@ -770,9 +593,7 @@ function syncSkillInputs(form, location, activity) {
   }
 
   if (heroSubtitleOutput) {
-    heroSubtitleOutput.textContent = isLockContext
-      ? t("WILDHARVEST.Dialog.Common.SkillCheck", { skillLabel })
-      : t("WILDHARVEST.Dialog.Search.SearchingWith", { skillLabel });
+    heroSubtitleOutput.textContent = t("WILDHARVEST.Dialog.Common.SkillCheck", { skillLabel });
   }
 }
 
@@ -799,16 +620,16 @@ export function openSearchDialog(options = {}) {
   const actors = Array.isArray(options.availableActors) && options.availableActors.length
     ? options.availableActors
     : getAvailableActors();
-  const selectedActorId = options.actorId && actors.some((actor) => actor.id === options.actorId)
-    ? options.actorId
-    : getDefaultActorId(actors);
-  const selectedContainerId = String(options.containerId ?? "").trim();
-  const { location: initialLocation, activity: initialActivity } = getInitialSearchContext(locations, options);
-  const lockContext = Boolean(options.lockContext);
-  const title = options.title ?? t("WILDHARVEST.Dialog.Search.Title");
-  const beforeSubmit = typeof options.beforeSubmit === "function" ? options.beforeSubmit : null;
   const onSubmitRequest = typeof options.onSubmitRequest === "function" ? options.onSubmitRequest : null;
   const requireActor = Boolean(onSubmitRequest);
+  // A GM test roll starts on "No character save" so rewards only reach a character on purpose.
+  const selectedActorId = options.actorId && actors.some((actor) => actor.id === options.actorId)
+    ? options.actorId
+    : (!requireActor && options.defaultToNoActor ? "" : getDefaultActorId(actors));
+  const selectedContainerId = String(options.containerId ?? "").trim();
+  const { location: initialLocation, activity: initialActivity } = getInitialSearchContext(locations, options);
+  const title = options.title ?? t("WILDHARVEST.Dialog.Search.Title");
+  const beforeSubmit = typeof options.beforeSubmit === "function" ? options.beforeSubmit : null;
   if (requireActor && !actors.length) {
     ui.notifications.warn(t("WILDHARVEST.Errors.PlayerCharacterRequired"));
     return null;
@@ -821,45 +642,60 @@ export function openSearchDialog(options = {}) {
       allowRollModeSelection: true
     });
   const initialSkillLabel = getActivitySkillLabel(initialActivity) || initialActivity.skillLabel || t("WILDHARVEST.Default.SkillLabel");
-  const heroTitle = lockContext
-    ? initialActivity.name
-    : t("WILDHARVEST.Dialog.Search.Title");
-  const heroSubtitle = lockContext
-    ? t("WILDHARVEST.Dialog.Common.SkillCheck", { skillLabel: initialSkillLabel })
-    : t("WILDHARVEST.Dialog.Search.SearchingWith", { skillLabel: initialSkillLabel });
+  const heroTitle = initialActivity.name;
+  const heroSubtitle = t("WILDHARVEST.Dialog.Common.SkillCheck", { skillLabel: initialSkillLabel });
   const initialBaseModifier = getActorSkillModifier(
     selectedActorId ? game.actors.get(selectedActorId) : null,
     initialActivity
   ) ?? 0;
+
+  const selectedActor = actors.find((actor) => actor.id === selectedActorId) ?? null;
+  // Both callers (Workbench test roll and the player roll window) fix the location and activity in advance.
+  const content = renderModuleTemplate("wildharvest.playerRoll", {
+    hero: { title: heroTitle, subtitle: heroSubtitle, icon: PLAYER_UI_ICONS.roll },
+    rollTitle: { title: t("WILDHARVEST.Dialog.Search.RollSection"), icon: PLAYER_UI_ICONS.roll },
+    labels: {
+      actor: t("WILDHARVEST.Dialog.Search.Actor"),
+      noCharacterSave: t("WILDHARVEST.Dialog.Search.NoCharacterSave"),
+      lootDestination: t("WILDHARVEST.Dialog.Search.LootDestination"),
+      lootDestinationHint: t("WILDHARVEST.Dialog.Search.LootDestinationHint"),
+      baseModifier: t("WILDHARVEST.Dialog.Search.BaseModifier"),
+      extraModifier: t("WILDHARVEST.Dialog.Search.ExtraModifier"),
+      extraModifierLimit: t("WILDHARVEST.Dialog.Search.ExtraModifierLimit", { max: rollPolicy.maxExtraModifier }),
+      extraModifierLocked: t("WILDHARVEST.Dialog.Search.ExtraModifierLocked"),
+      rollMode: t("WILDHARVEST.Dialog.Search.RollMode"),
+      rollModeLocked: t("WILDHARVEST.Dialog.Search.RollModeLocked")
+    },
+    allowNoActor: !requireActor,
+    // W-9 (1.32.0): a player with one character sees its name instead of a list with one entry.
+    singleActor: requireActor && actors.length === 1 ? { id: actors[0].id, name: actors[0].name } : null,
+    actors: actors.map((actor) => ({ id: actor.id, name: actor.name, selected: actor.id === selectedActorId })),
+    hasContainers: getActorContainers(selectedActor).length > 0,
+    containerOptions: getContainerOptionsContext(selectedActor, selectedContainerId),
+    context: {
+      locationId: initialLocation.id,
+      activityId: initialActivity.id,
+      skillId: initialActivity.skillId ?? "",
+      skillName: getActivitySkillLabel(initialActivity) || initialActivity.skillLabel
+    },
+    baseModifier: String(initialBaseModifier),
+    baseModifierText: formatSigned(initialBaseModifier),
+    policy: rollPolicy,
+    rollModes: ["normal", "advantage", "disadvantage"].map((mode) => ({
+      value: mode,
+      label: getRollModeLabel(mode),
+      selected: mode === "normal"
+    }))
+  });
 
   let submitting = false;
   const dialog = new DialogV2({
     window: {
       title
     },
-    content: `
-      <div class="wildharvest-dialog wildharvest-player-layout wildharvest-player-layout--roll" data-player-lock-context="${lockContext ? "true" : "false"}">
-        ${renderPlayerHero({
-          title: heroTitle,
-          subtitle: heroSubtitle,
-          icon: "fa-solid fa-compass",
-          imagePath: PLAYER_UI_ASSETS.roll
-        })}
-        ${renderActorSection(actors, selectedActorId, selectedContainerId, !requireActor)}
-        ${renderContextSection({
-          locations,
-          location: initialLocation,
-          activity: initialActivity,
-          lockContext
-        })}
-        ${renderRollSection({
-          baseModifier: initialBaseModifier,
-          selectedRollMode: "normal",
-          rollPolicy
-        })}
-        <p class="wildharvest-player-calculation-status" data-search-calculation-status role="status" aria-live="polite" hidden></p>
-      </div>
-    `,
+    // Keep the roll window open when the request fails, so the player can try again.
+    form: { closeOnSubmit: false },
+    content,
     buttons: [
       {
         action: "submit",
@@ -869,7 +705,9 @@ export function openSearchDialog(options = {}) {
         callback: async (event, button, instance) => {
           if (submitting) return;
           submitting = true;
-          const submitButton = event?.currentTarget;
+          // Foundry passes the clicked button as the second argument; event.currentTarget is the whole
+          // dialog element, and swapping its innerHTML would replace the entire window.
+          const submitButton = button;
           const calculationMessageKey = onSubmitRequest
             ? "WILDHARVEST.Dialog.Search.RequestingResolution"
             : "WILDHARVEST.Dialog.Search.CalculatingRewards";
@@ -887,17 +725,17 @@ export function openSearchDialog(options = {}) {
             setSearchCalculationState(instance, submitButton, false, calculationMessageKey);
             return;
           }
-          instance?.close?.();
-          if (summary.pending) {
-            ui.notifications.info(t("WILDHARVEST.Notifications.ResolutionRequested"));
-            return;
-          }
+          // Shown before the window closes, so a quick answer from the GM comes after it (1.34.0).
+          if (summary.pending && !summary.silent) ui.notifications.info(t("WILDHARVEST.Notifications.ResolutionRequested"));
+          await instance?.close?.();
+          if (summary.pending) return;
           openSearchResultDialog(summary, resultPosition);
         }
       },
       {
         action: "cancel",
-        label: t("WILDHARVEST.Dialog.Search.Cancel")
+        label: t("WILDHARVEST.Dialog.Search.Cancel"),
+        callback: (_event, _button, instance) => instance.close()
       }
     ],
     rejectClose: false
@@ -912,11 +750,6 @@ export function openSearchDialog(options = {}) {
       "[data-action='submit']",
       ".dialog-buttons button.default"
     ]);
-    if (!lockContext) {
-      attachListeners(dialog, locations);
-      return;
-    }
-
     const form = getDialogForm(dialog);
     if (!form) return;
     form.elements.actorId?.addEventListener("change", () => {
@@ -927,6 +760,7 @@ export function openSearchDialog(options = {}) {
     syncContainerDestination(form);
   }, { once: true });
   dialog.render({ force: true });
+  return dialog;
 }
 
 

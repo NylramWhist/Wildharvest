@@ -1,0 +1,16 @@
+{{#if compendiums.length}}
+<div class="wildharvest-gm-compendium-list">
+  {{#each compendiums}}
+  <label class="wildharvest-gm-compendium-option{{#if notLootable}} is-not-lootable{{/if}}">
+    <input type="checkbox" class="wh-check" name="activityPackId" value="{{id}}"{{#if selected}} checked{{/if}}>
+    <span>
+      <strong>{{name}}</strong>
+      <small>{{id}}</small>
+      {{#if notLootable}}<small class="wildharvest-gm-compendium-warning"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> {{../notLootableText}}</small>{{/if}}
+    </span>
+  </label>
+  {{/each}}
+</div>
+{{else}}
+<p class="wildharvest-empty">{{emptyText}}</p>
+{{/if}}

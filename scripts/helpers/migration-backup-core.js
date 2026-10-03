@@ -84,8 +84,11 @@ export function normalizeMigrationBackupHistory(rawValue, maxBackups = MAX_MIGRA
 
 export function appendMigrationBackup(rawHistory, backup, maxBackups = MAX_MIGRATION_BACKUPS) {
   const history = normalizeMigrationBackupHistory(rawHistory, maxBackups);
+  // A backup taken before a restore always saves the current state, even when the same
+  // module version already made one; migration backups are made once per version pair.
+  const matchesByVersion = backup?.reason !== "pre-restore";
   const duplicate = history.find((entry) => entry.fingerprint === backup?.fingerprint
-    || (entry.moduleId === backup?.moduleId
+    || (matchesByVersion && entry.moduleId === backup?.moduleId
       && entry.moduleVersion === backup?.moduleVersion
       && Number(entry.sourceDataVersion) === Number(backup?.sourceDataVersion)
       && Number(entry.targetDataVersion) === Number(backup?.targetDataVersion)
@@ -98,10 +101,81 @@ export function appendMigrationBackup(rawHistory, backup, maxBackups = MAX_MIGRA
     };
   }
 
-  const nextHistory = normalizeMigrationBackupHistory([...history, backup], maxBackups);
+  const nextHistory = keepNewestBackupPerReason(normalizeMigrationBackupHistory([...history, backup], maxBackups));
   return {
     added: true,
     backup: cloneJsonValue(backup, null),
     history: nextHistory
   };
+}
+
+// 1.22.0 (D13): only the newest backup of each kind is kept (a pre-migration backup and,
+// after a restore, the backup of the state that was replaced). Older ones only take up room
+// in a world setting that every client downloads.
+export function keepNewestBackupPerReason(history) {
+  const newestByReason = new Map();
+  for (const backup of history) {
+    const reason = String(backup?.reason ?? "");
+    const previous = newestByReason.get(reason);
+    if (!previous || String(backup.createdAt ?? "") >= String(previous.createdAt ?? "")) {
+      newestByReason.set(reason, backup);
+    }
+  }
+  const kept = new Set(newestByReason.values());
+  return history.filter((backup) => kept.has(backup));
+}
+
+export function summarizeMigrationBackups(rawValue) {
+  const history = normalizeMigrationBackupHistory(rawValue);
+  return {
+    count: history.length,
+    bytes: history.length ? new TextEncoder().encode(JSON.stringify(history)).length : 0,
+    newest: history.at(-1) ?? null
+  };
+}
+
+function flagKeys(value) {
+  return value && typeof value === "object" && !Array.isArray(value) ? Object.keys(value) : [];
+}
+
+// Plan of flag changes that puts module flags back exactly as they were in the backup:
+// every current top-level key is removed first, then the backed-up flags are written.
+// Documents that had no module data at backup time lose their current module data.
+function stableStringify(value) {
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(",")}}`;
+  }
+  return JSON.stringify(value ?? null);
+}
+
+function sameModuleFlags(current, saved) {
+  const left = current && flagKeys(current).length ? current : null;
+  const right = saved && flagKeys(saved).length ? saved : null;
+  return stableStringify(left) === stableStringify(right);
+}
+
+export function buildRestorePlan(backup, currentActors) {
+  const backedUp = new Map((backup?.actors ?? []).map((actor) => [String(actor.id), actor]));
+  const plan = [];
+  for (const actor of currentActors ?? []) {
+    const saved = backedUp.get(String(actor.id));
+    const items = [];
+    const savedItems = new Map((saved?.items ?? []).map((item) => [String(item.id), item]));
+    for (const item of actor.items ?? []) {
+      const savedItem = savedItems.get(String(item.id));
+      const unsetKeys = flagKeys(item.moduleFlags);
+      const setFlags = savedItem?.moduleFlags && flagKeys(savedItem.moduleFlags).length ? savedItem.moduleFlags : null;
+      // Items whose module flags already match the backup need no update (1.22.0: large inventories).
+      if (sameModuleFlags(item.moduleFlags, setFlags)) continue;
+      if (unsetKeys.length || setFlags) items.push({ itemId: String(item.id), unsetKeys, setFlags });
+    }
+    const unsetKeys = flagKeys(actor.moduleFlags);
+    const setFlags = saved?.moduleFlags && flagKeys(saved.moduleFlags).length ? saved.moduleFlags : null;
+    const actorChanged = !sameModuleFlags(actor.moduleFlags, setFlags);
+    if (actorChanged || items.length) {
+      plan.push({ actorId: String(actor.id), actorChanged, unsetKeys, setFlags, items });
+    }
+  }
+  return plan;
 }

@@ -2,8 +2,9 @@
 .wildharvest-gm-history-workbench {
   display: grid;
   grid-template-columns: 210px minmax(520px, 1fr) 290px;
-  gap: 0.55rem;
+  gap: var(--wh-space-2);
   align-items: stretch;
+  align-content: start;
 }
 
 .wildharvest-gm-history-pane {
@@ -12,8 +13,8 @@
   height: 31rem;
   overflow: hidden;
   border: 1px solid var(--wildharvest-gm-border-dark);
-  border-radius: 3px;
-  background: linear-gradient(180deg, #17130e, #0d0b08);
+  border-radius: var(--wh-radius-sm);
+  background: linear-gradient(180deg, var(--wh-surface-1), var(--wh-surface-0));
 }
 
 .wildharvest-gm-history-pane--actors {
@@ -37,30 +38,30 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.48rem 0.6rem;
+  gap: var(--wh-space-2);
+  padding: var(--wh-space-2) var(--wh-space-2);
   border-bottom: 1px solid var(--wildharvest-gm-border);
-  background: linear-gradient(180deg, #211a10, #17120d);
+  background: linear-gradient(180deg, var(--wh-surface-2), var(--wh-surface-1));
 }
 
 .wildharvest-gm-history-pane__header h4 {
   margin: 0;
   color: var(--wildharvest-gm-accent-bright);
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 0.78rem;
+  font-family: var(--wh-font-heading);
+  font-size: var(--wh-fs-xs);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
 .wildharvest-gm-history-pane__header > span {
   min-width: 1.4rem;
-  padding: 0.1rem 0.35rem;
+  padding: var(--wh-space-0) var(--wh-space-1);
   border: 1px solid var(--wildharvest-gm-border-dark);
-  border-radius: 3px;
-  background: #100e0b;
+  border-radius: var(--wh-radius-sm);
+  background: var(--wh-surface-0);
   color: var(--wildharvest-gm-text-muted);
-  font-size: 0.75rem;
-  font-weight: 800;
+  font-size: var(--wh-fs-xs);
+  font-weight: var(--wh-fw-heavy);
   text-align: center;
 }
 
@@ -69,7 +70,7 @@
   align-content: start;
   max-height: 100%;
   overflow-y: auto;
-  padding: 0.35rem;
+  padding: var(--wh-space-1);
 }
 
 .wildharvest-window--gm .wildharvest-gm-history-actor {
@@ -77,9 +78,9 @@
   min-height: 3.35rem;
   display: grid;
   grid-template-columns: 32px minmax(0, 1fr);
-  gap: 0.48rem;
+  gap: var(--wh-space-2);
   justify-content: stretch;
-  padding: 0.42rem;
+  padding: var(--wh-space-2);
   border: 1px solid transparent;
   border-bottom-color: var(--wildharvest-gm-border-dark);
   background: transparent;
@@ -93,7 +94,7 @@
 
 .wildharvest-window--gm .wildharvest-gm-history-actor.is-active {
   border-color: var(--wildharvest-gm-border-bright);
-  background: linear-gradient(180deg, #3a2913, #21160c);
+  background: linear-gradient(180deg, var(--wh-surface-3), var(--wh-surface-2));
   color: var(--wildharvest-gm-accent-bright);
   box-shadow: var(--wildharvest-gm-glow);
 }
@@ -103,14 +104,14 @@
   height: 32px;
   object-fit: cover;
   border: 1px solid var(--wildharvest-gm-border-dark);
-  border-radius: 3px;
-  background: #0b0907;
+  border-radius: var(--wh-radius-sm);
+  background: var(--wh-surface-0);
 }
 
 .wildharvest-gm-history-actor > span {
   min-width: 0;
   display: grid;
-  gap: 0.08rem;
+  gap: var(--wh-space-0);
   align-content: center;
   justify-items: start;
 }
@@ -125,19 +126,19 @@
 
 .wildharvest-gm-history-actor strong {
   color: var(--wildharvest-gm-text);
-  font-size: 0.75rem;
+  font-size: var(--wh-fs-xs);
 }
 
 .wildharvest-gm-history-actor small {
   color: var(--wildharvest-gm-text-dim);
-  font-size: 0.75rem;
+  font-size: var(--wh-fs-xs);
 }
 
 .wildharvest-gm-history-search {
   display: grid;
-  gap: 0.22rem;
+  gap: var(--wh-space-1);
   margin: 0;
-  padding: 0.55rem 0.6rem;
+  padding: var(--wh-space-2) var(--wh-space-2);
   border-bottom: 1px solid var(--wildharvest-gm-border-dark);
 }
 
@@ -152,14 +153,20 @@
   min-width: 650px;
 }
 
+.wildharvest-gm-history-table--no-location .wildharvest-gm-history-table__header,
+.wildharvest-window--gm .wildharvest-gm-history-table--no-location .wildharvest-gm-history-entry {
+  grid-template-columns: minmax(145px, 1.4fr) minmax(110px, 1fr) 62px minmax(120px, 0.9fr);
+  min-width: 520px;
+}
+
 .wildharvest-gm-history-table__header {
   min-height: 1.9rem;
   align-items: center;
   border-bottom: 1px solid var(--wildharvest-gm-border-dark);
-  background: #12100c;
+  background: var(--wh-surface-0);
   color: var(--wildharvest-gm-text-dim);
-  font-size: 0.75rem;
-  font-weight: 800;
+  font-size: var(--wh-fs-xs);
+  font-weight: var(--wh-fw-heavy);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -168,7 +175,7 @@
 .wildharvest-gm-history-entry > span,
 .wildharvest-gm-history-entry > strong {
   min-width: 0;
-  padding: 0.42rem 0.5rem;
+  padding: var(--wh-space-2) var(--wh-space-2);
   overflow: hidden;
   border-right: 1px solid var(--wildharvest-gm-border-dark);
   text-overflow: ellipsis;
@@ -194,19 +201,19 @@
   border: 0;
   border-bottom: 1px solid var(--wildharvest-gm-border-dark);
   border-radius: 0;
-  background: linear-gradient(180deg, #17130e, #0e0c09);
+  background: linear-gradient(180deg, var(--wh-surface-1), var(--wh-surface-0));
   color: var(--wildharvest-gm-text-muted);
-  font-size: 0.75rem;
+  font-size: var(--wh-fs-xs);
   text-align: left;
 }
 
 .wildharvest-window--gm .wildharvest-gm-history-entry:hover {
   border-color: var(--wildharvest-gm-border);
-  background: linear-gradient(180deg, #241b10, #141009);
+  background: linear-gradient(180deg, var(--wh-surface-2), var(--wh-surface-0));
 }
 
 .wildharvest-window--gm .wildharvest-gm-history-entry.is-active {
-  background: linear-gradient(90deg, rgba(199, 146, 47, 0.16), rgba(33, 22, 12, 0.94));
+  background: linear-gradient(90deg, color-mix(in srgb, var(--wh-accent) 16%, transparent), var(--wh-surface-2));
   color: var(--wildharvest-gm-text);
   box-shadow: inset 2px 0 var(--wildharvest-gm-accent-bright);
 }
@@ -214,29 +221,29 @@
 .wildharvest-gm-history-entry__activity,
 .wildharvest-gm-history-entry > strong {
   color: var(--wildharvest-gm-text);
-  font-weight: 800;
+  font-weight: var(--wh-fw-heavy);
 }
 
 .wildharvest-gm-history-entry > strong {
   color: var(--wildharvest-gm-accent-bright);
-  font-size: 0.82rem;
+  font-size: var(--wh-fs-sm);
   text-align: center;
 }
 
 .wildharvest-gm-history-entry__date {
   color: var(--wildharvest-gm-text-dim);
-  font-size: 0.75rem;
+  font-size: var(--wh-fs-xs);
 }
 
 .wildharvest-gm-history-empty {
   margin: 0;
-  padding: 1rem;
+  padding: var(--wh-space-4);
   text-align: center;
 }
 
 .wildharvest-gm-history-detail,
 .wildharvest-gm-history-detail-empty {
-  padding: 0.65rem;
+  padding: var(--wh-space-3);
 }
 
 .wildharvest-gm-history-detail-empty {
@@ -244,45 +251,45 @@
   display: grid;
   place-items: center;
   align-content: center;
-  gap: 0.6rem;
+  gap: var(--wh-space-2);
   color: var(--wildharvest-gm-text-dim);
   text-align: center;
 }
 
 .wildharvest-gm-history-detail-empty__asset {
-  width: 34px;
-  height: 34px;
+  --wh-icon-size: 2.125rem;
   opacity: 0.6;
+  color: var(--wildharvest-gm-accent, var(--wh-accent));
 }
 
 .wildharvest-gm-history-detail-empty p {
   max-width: 15rem;
   margin: 0;
-  font-size: 0.75rem;
-  line-height: 1.4;
+  font-size: var(--wh-fs-xs);
+  line-height: var(--wh-lh-normal);
 }
 
 .wildharvest-gm-history-detail {
   display: grid;
-  gap: 0.65rem;
+  gap: var(--wh-space-3);
 }
 
 .wildharvest-gm-history-detail__header {
   display: grid;
-  gap: 0.15rem;
-  padding-bottom: 0.55rem;
+  gap: var(--wh-space-0);
+  padding-bottom: var(--wh-space-2);
   border-bottom: 1px solid var(--wildharvest-gm-border-dark);
 }
 
 .wildharvest-gm-history-detail__header strong {
   color: var(--wildharvest-gm-accent-bright);
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 0.95rem;
+  font-family: var(--wh-font-heading);
+  font-size: var(--wh-fs-md);
 }
 
 .wildharvest-gm-history-detail__header span {
   color: var(--wildharvest-gm-text-muted);
-  font-size: 0.75rem;
+  font-size: var(--wh-fs-xs);
 }
 
 .wildharvest-gm-history-detail__stats {
@@ -290,18 +297,19 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1px;
   margin: 0;
-  overflow: hidden;
+  /* clip, not hidden: a hidden overflow let the grid squeeze the stats and cut off the last row. */
+  overflow: clip;
   border: 1px solid var(--wildharvest-gm-border-dark);
-  border-radius: 3px;
+  border-radius: var(--wh-radius-sm);
   background: var(--wildharvest-gm-border-dark);
 }
 
 .wildharvest-gm-history-detail__stats > div {
   min-width: 0;
   display: grid;
-  gap: 0.12rem;
-  padding: 0.45rem 0.5rem;
-  background: #12100c;
+  gap: var(--wh-space-0);
+  padding: var(--wh-space-2) var(--wh-space-2);
+  background: var(--wh-surface-0);
 }
 
 .wildharvest-gm-history-detail__stats dt,
@@ -314,56 +322,99 @@
 
 .wildharvest-gm-history-detail__stats dt {
   color: var(--wildharvest-gm-text-dim);
-  font-size: 0.75rem;
-  font-weight: 800;
+  font-size: var(--wh-fs-xs);
+  font-weight: var(--wh-fw-heavy);
   letter-spacing: 0.035em;
   text-transform: uppercase;
 }
 
 .wildharvest-gm-history-detail__stats dd {
   color: var(--wildharvest-gm-text);
-  font-size: 0.75rem;
+  font-size: var(--wh-fs-xs);
 }
 
 .wildharvest-gm-history-detail__rewards {
   display: grid;
-  gap: 0.4rem;
+  gap: var(--wh-space-2);
 }
 
 .wildharvest-gm-history-detail__rewards h5 {
   margin: 0;
   color: var(--wildharvest-gm-text-muted);
-  font-size: 0.75rem;
+  font-size: var(--wh-fs-xs);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
 .wildharvest-gm-history-rewards {
   display: grid;
-  gap: 0.3rem;
+  gap: var(--wh-space-1);
 }
 
 .wildharvest-gm-history-reward {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr);
-  gap: 0.45rem;
+  gap: var(--wh-space-2);
   align-items: center;
-  padding: 0.35rem;
+  padding: var(--wh-space-1);
   border: 1px solid var(--wildharvest-gm-border-dark);
-  border-radius: 3px;
-  background: #12100c;
+  border-radius: var(--wh-radius-sm);
+  background: var(--wh-surface-0);
 }
 
 .wildharvest-gm-history-reward img {
   width: 28px;
   height: 28px;
   object-fit: cover;
-  border-radius: 2px;
+  border-radius: var(--wh-radius-sm);
 }
 
 .wildharvest-gm-history-reward span {
   min-width: 0;
   overflow-wrap: anywhere;
   color: var(--wildharvest-gm-text);
-  font-size: 0.75rem;
+  font-size: var(--wh-fs-xs);
+}
+
+/* W-6 (1.31.0): in a medium-width Workbench the characters become a row above, and the entry
+   details stay next to the table instead of dropping below it. */
+@container wh-gm (max-width: 1100px) {
+  .wildharvest-gm-history-workbench {
+    grid-template-columns: minmax(0, 1fr) 280px;
+  }
+
+  .wildharvest-gm-history-pane--actors {
+    grid-column: 1 / -1;
+    grid-template-rows: auto;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    min-height: 0;
+    height: auto;
+  }
+
+  .wildharvest-gm-history-pane--actors .wildharvest-gm-history-pane__header {
+    border-bottom: 0;
+    border-right: 1px solid var(--wildharvest-gm-border);
+    align-self: stretch;
+  }
+
+  .wildharvest-gm-history-actors {
+    display: flex;
+    gap: var(--wh-space-1);
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .wildharvest-window--gm .wildharvest-gm-history-actor {
+    flex: 0 0 12.5rem;
+    width: 12.5rem;
+    min-height: 2.8rem;
+    border: 1px solid var(--wildharvest-gm-border-dark);
+  }
+
+  .wildharvest-gm-history-pane--entries,
+  .wildharvest-gm-history-pane--details {
+    min-height: 0;
+    height: 27rem;
+  }
 }

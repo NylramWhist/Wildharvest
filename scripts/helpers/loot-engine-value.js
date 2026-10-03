@@ -2,15 +2,19 @@ import { addCompendiumReward } from "./loot-engine-common.js";
 import {
   formatCopperAsGp,
   getValueBudgetForLootPoints,
-  selectValueBudgetItems
+  selectValueBudgetItemsAsync
 } from "./loot-engine-value-core.js";
 
 export async function buildValueLoot({ lootPoints, lootSource, pooledDocuments, valueRules }) {
   const budget = getValueBudgetForLootPoints(lootPoints, valueRules.brackets);
-  const selection = selectValueBudgetItems({
+  // 1.23.0 (D7): limited number of different items, with pauses so the GM's browser stays responsive.
+  const selection = await selectValueBudgetItemsAsync({
     pooledDocuments,
     targetGp: budget?.targetGp ?? 0,
-    tolerancePercent: valueRules.tolerancePercent
+    tolerancePercent: valueRules.tolerancePercent,
+    maxDistinctItems: valueRules.maxDistinctItems,
+    // 1.39.0 (D25): the top-up stage stops at this many copies, even below the tolerance range.
+    maxTotalItems: valueRules.maxTotalItems
   });
   const groupedRewards = new Map();
   for (const pickedEntry of selection.entries) {
@@ -53,7 +57,11 @@ export async function buildValueLoot({ lootPoints, lootSource, pooledDocuments, 
       invalidPriceCount: selection.invalidPriceCount,
       unaffordableCount: selection.unaffordableCount,
       duplicateEntryCount: selection.duplicateEntryCount,
-      maxQuantityPerItem: selection.maxQuantityPerItem
+      maxQuantityPerItem: selection.maxQuantityPerItem,
+      maxDistinctItems: selection.maxDistinctItems,
+      maxTotalItems: selection.maxTotalItems,
+      topUpEntryCount: selection.topUpEntryCount,
+      hitTotalLimit: selection.hitTotalLimit
     },
     selection
   };

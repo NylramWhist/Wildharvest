@@ -1,0 +1,16 @@
+{{#if tables.length}}
+<div class="wildharvest-gm-compendium-list wildharvest-gm-table-list">
+  {{#each tables}}
+  <label class="wildharvest-gm-compendium-option{{#if missing}} is-not-lootable{{/if}}">
+    <input type="checkbox" class="wh-check" name="presetTableId" value="{{uuid}}"{{#if selected}} checked{{/if}}>
+    <span>
+      <strong>{{name}}</strong>
+      <small>{{source}}</small>
+      {{#if missing}}<small class="wildharvest-gm-compendium-warning"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> {{../missingText}}</small>{{/if}}
+    </span>
+  </label>
+  {{/each}}
+</div>
+{{else}}
+<p class="wildharvest-empty">{{emptyText}}</p>
+{{/if}}

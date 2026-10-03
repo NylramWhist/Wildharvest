@@ -1,0 +1,10 @@
+<div class="wildharvest-gm-response-list">
+  {{#each entries}}
+  {{> wildharvest.gmResponseEntry this}}
+  {{else}}
+  <div class="wildharvest-gm-empty-state-card wildharvest-gm-empty-state-card--compact">
+    <i class="{{@root.icons.pending}} wh-icon wildharvest-gm-empty-state-card__asset" aria-hidden="true"></i>
+    <strong>{{localize "WILDHARVEST.Dialog.ControlPanel.LiveResponsesEmptyFiltered"}}</strong>
+  </div>
+  {{/each}}
+</div>

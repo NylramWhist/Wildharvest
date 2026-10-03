@@ -1,0 +1,7 @@
+<div class="wildharvest-gm-live-filters{{#if extraClass}} {{extraClass}}{{/if}}" role="group" aria-label="{{localize "WILDHARVEST.Dialog.ControlPanel.FiltersLabel"}}">
+  {{#each options}}
+  <button type="button" class="button{{#if active}} is-active{{/if}}" data-action="{{../action}}" data-filter-id="{{id}}" aria-pressed="{{#if active}}true{{else}}false{{/if}}">
+    {{label}}
+  </button>
+  {{/each}}
+</div>

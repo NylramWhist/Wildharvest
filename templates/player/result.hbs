@@ -1,0 +1,70 @@
+<div class="wildharvest-dialog wildharvest-player-layout wildharvest-player-layout--result {{toneClass}} {{rewardsStateClass}}">
+  {{> wildharvest.playerHero hero}}
+  <section class="wildharvest-player-card wildharvest-player-card--accent wildharvest-player-card--result-summary">
+    <div class="wildharvest-player-stat-grid">
+      <div class="wildharvest-player-stat wildharvest-player-stat--primary">
+        <span>{{labels.finalResult}}</span>
+        <strong class="wildharvest-player-stat__value">{{rollTotal}}</strong>
+      </div>
+      <div class="wildharvest-player-stat">
+        <span>{{labels.lootPoints}}</span>
+        <strong class="wildharvest-player-stat__value">{{lootPoints}}</strong>
+      </div>
+    </div>
+    <p class="wildharvest-player-result-message">{{lootMessage}}</p>
+  </section>
+  <section class="wildharvest-player-card wildharvest-player-card--result-items">
+    {{> wildharvest.playerSectionTitle itemsTitle}}
+    {{#if summary}}<p class="wildharvest-result-summary">{{summary}}</p>{{/if}}
+    <div class="wildharvest-result-list">
+      {{#if hasRewards}}
+      {{#if previewLabel}}<p class="wildharvest-result-preview-label">{{previewLabel}}</p>{{/if}}
+      <div class="wildharvest-result-preview-grid">
+        {{#each previewRewards}}
+        <article class="wildharvest-result-preview-item" title="{{name}}">
+          <img src="{{img}}" alt="">
+          <strong>{{name}}</strong>
+          <span>x{{quantity}}</span>
+        </article>
+        {{/each}}
+      </div>
+      <details class="wildharvest-result-details">
+        <summary>{{labels.viewAll}}</summary>
+        <div class="wildharvest-result-groups">
+        {{#each groups}}
+        {{#if label}}<h4 class="wildharvest-result-group">{{label}} <span>({{count}})</span></h4>{{/if}}
+        <div class="wildharvest-result-list">
+          {{#each rewards}}
+          <article class="wildharvest-result-item">
+            <div class="wildharvest-result-item__status">
+              <i class="{{@root.icons.completed}} wh-icon wh-icon--md wildharvest-result-item__status-asset" aria-hidden="true"></i>
+            </div>
+            <img class="wildharvest-result-item__image" src="{{img}}" alt="">
+            <div class="wildharvest-result-item__copy">
+              <strong>{{name}}</strong>
+              {{#if unitValue}}<small>{{unitValue}}</small>{{/if}}
+            </div>
+            <span class="wildharvest-result-item__quantity">x{{quantity}}</span>
+          </article>
+          {{/each}}
+        </div>
+        {{/each}}
+        </div>
+        {{#if omittedText}}<p class="notes wildharvest-result-more">{{omittedText}}</p>{{/if}}
+      </details>
+      {{else}}
+      <div class="wildharvest-result-empty">
+        <i class="{{icons.rewards}} wh-icon wh-icon--xl wildharvest-result-empty__asset" aria-hidden="true"></i>
+        <p>{{labels.noItems}}</p>
+        {{#if missingText}}<p class="wildharvest-result-empty__hint">{{missingText}}</p>{{/if}}
+      </div>
+      {{/if}}
+    </div>
+  </section>
+  {{#if storage}}
+  <p class="wildharvest-player-status {{storage.className}}" role="status">
+    <i class="{{storage.icon}} wh-icon wh-icon--md wildharvest-player-status__asset" aria-hidden="true"></i>
+    <span>{{storage.message}}</span>
+  </p>
+  {{/if}}
+</div>

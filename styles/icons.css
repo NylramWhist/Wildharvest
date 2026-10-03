@@ -1,0 +1,201 @@
+/*
+ * Wildharvest shared small components: icons (1.37.2), check boxes (1.37.3) and, at the end, the
+ * interactive states every button, tab and link shares (1.38.1).
+ *
+ * Icon component (1.37.2).
+ *
+ * Font Awesome glyphs have different widths (fa-box-open is wider than 1em), and an <i> inside a
+ * grid wrapper only stays centred when the wrapper centres its track as well as the item. These
+ * two classes make every icon a fixed square box with the glyph centred in it:
+ *
+ *   .wh-icon        the <i> itself: a square box (1.25em) with the glyph centred. Sized with
+ *                   --wh-icon-size (default: --wh-icon-size-md) or the .wh-icon--sm/--lg/--xl
+ *                   modifiers.
+ *   .wh-icon-frame  a wrapper that draws a box (emblem, badge) around one .wh-icon: it centres
+ *                   the icon in both axes whatever its padding or size, and the glyph may
+ *                   overflow the content box without shifting.
+ *
+ * Icons are decorative (aria-hidden); a button or status keeps its own accessible name.
+ */
+
+i.wh-icon {
+  --wh-icon-box: calc(var(--wh-icon-size, var(--wh-icon-size-md, 1rem)) * 1.25);
+  display: inline-grid;
+  place-items: center;
+  place-content: center;
+  flex: 0 0 auto;
+  width: var(--wh-icon-box);
+  height: var(--wh-icon-box);
+  font-size: var(--wh-icon-size, var(--wh-icon-size-md, 1rem));
+  line-height: 1;
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* The glyph is the only child of the box: no inline baseline gap below it. */
+i.wh-icon::before {
+  display: block;
+  line-height: 1;
+  margin: 0;
+}
+
+i.wh-icon--sm { --wh-icon-size: var(--wh-icon-size-sm, 0.875rem); }
+i.wh-icon--md { --wh-icon-size: var(--wh-icon-size-md, 1rem); }
+i.wh-icon--lg { --wh-icon-size: var(--wh-icon-size-lg, 1.45rem); }
+i.wh-icon--xl { --wh-icon-size: var(--wh-icon-size-xl, 2rem); }
+
+.wh-icon-frame {
+  display: grid;
+  place-items: center;
+  place-content: center;
+  flex: 0 0 auto;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/*
+ * Check box (1.37.3).
+ *
+ * One look for every tick box of the module. Foundry's default tick box stretched to the height of
+ * its row (a tall box with the tick only in the top part), so the box is drawn here: a real
+ * <input type="checkbox" class="wh-check"> (keyboard, label click and forms work as usual) with
+ * appearance: none, a fixed 1.25 rem square, a 2 px border and, when ticked, an accent fill with a
+ * tick. It sits at the top of its row, level with the first line of text.
+ *
+ * The selector is stronger than the window input styles (.wildharvest-window--gm input ...), which
+ * would otherwise give the box a minimum height, a gradient and a glow.
+ */
+.wildharvest-window input.wh-check[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-grid;
+  place-content: center;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: 1.25rem;
+  height: 1.25rem;
+  min-width: 1.25rem;
+  min-height: 1.25rem;
+  margin: 0;
+  padding: 0;
+  border: 2px solid color-mix(in srgb, var(--wh-text) 70%, transparent);
+  border-radius: var(--wh-radius-sm, 4px);
+  background: var(--wh-input-bg, transparent);
+  box-shadow: none;
+  cursor: pointer;
+  transition: background-color var(--wh-motion-fast) var(--wh-ease), border-color var(--wh-motion-fast) var(--wh-ease);
+}
+
+.wildharvest-window input.wh-check[type="checkbox"]::before {
+  content: "";
+  /* Foundry positions the pseudo-element of its check boxes absolutely at the top left. */
+  position: static;
+  inset: auto;
+  width: 0.38rem;
+  height: 0.7rem;
+  margin: 0;
+  /* Not currentColor: Foundry resets the colour of the pseudo-element of its check boxes. */
+  border: solid var(--wh-accent-contrast, #1a1206);
+  border-width: 0 0.16rem 0.16rem 0;
+  transform: translateY(-0.07rem) rotate(45deg);
+  opacity: 0;
+}
+
+/* Foundry draws its own tick with ::after (and positions ::before at the top left); without this the two pseudo-elements stack in the grid and push our tick off-centre. */
+.wildharvest-window input.wh-check[type="checkbox"]::after {
+  content: none;
+  display: none;
+}
+
+.wildharvest-window input.wh-check[type="checkbox"]:hover {
+  border-color: var(--wh-accent-bright, #f0c879);
+  box-shadow: none;
+}
+
+.wildharvest-window input.wh-check[type="checkbox"]:checked {
+  border-color: var(--wh-accent, #d9a84e);
+  background: var(--wh-accent, #d9a84e);
+}
+
+.wildharvest-window input.wh-check[type="checkbox"]:checked::before {
+  opacity: 1;
+}
+
+.wildharvest-window input.wh-check[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--wh-focus-ring, #f0c879);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+.wildharvest-window input.wh-check[type="checkbox"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* A selection card (list of compendiums, folders, tables, recipients) shows the choice on the whole card. */
+:is(.wildharvest-gm-recipient, .wildharvest-gm-compendium-option):has(.wh-check:checked) {
+  border-color: var(--wh-border-strong);
+  background: var(--wh-accent-fill);
+}
+
+:is(.wildharvest-gm-recipient, .wildharvest-gm-compendium-option):has(.wh-check:focus-visible) {
+  outline: 2px solid var(--wh-focus-ring, #f0c879);
+  outline-offset: 1px;
+}
+
+/* High contrast (forced colours): the box and the tick keep system colours, the tick no longer depends on the fill. */
+@media (forced-colors: active) {
+  .wildharvest-window input.wh-check[type="checkbox"] {
+    border-color: ButtonText;
+    background: Field;
+    color: Highlight;
+  }
+
+  .wildharvest-window input.wh-check[type="checkbox"]:checked {
+    border-color: Highlight;
+    background: Field;
+  }
+
+  .wildharvest-window input.wh-check[type="checkbox"]:checked::before {
+    border-color: Highlight;
+  }
+}
+
+/*
+ * Interactive states (1.38.1).
+ *
+ * One pressed, disabled and keyboard-focus state for the whole module. Hover stays with each
+ * component (a button, a tab, a row and a card hover differently), but these three do not vary:
+ *
+ *   pressed   a 1 px push and a slightly darker fill, so a click is felt on every button, default
+ *             (solid accent) or quiet, and on the tabs;
+ *   disabled  dimmed, not clickable, not-allowed cursor, and no hover or pressed change;
+ *   focus     the same 2 px ring in --wh-focus-ring for every control, link, summary and tab,
+ *             also where a component has its own hover.
+ *
+ * The selectors are written with :is() on purpose: they are as strong as the window rules in the
+ * GM and player sheets, which load later, and replace the separate disabled rule of the GM sheet.
+ */
+.wildharvest-window :is(button, .button, .wildharvest-gm-tab):not(:disabled, [disabled], [aria-disabled="true"]):active {
+  transform: translateY(1px);
+  filter: brightness(0.92);
+}
+
+.wildharvest-window :is(button, .button):is(:disabled, [disabled], [aria-disabled="true"]) {
+  opacity: 0.58;
+  cursor: not-allowed;
+  pointer-events: none;
+  box-shadow: none;
+  filter: grayscale(0.2);
+}
+
+.wildharvest-window :is(button, .button, a, summary, .wildharvest-gm-tab, [role="tab"], [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 2px solid var(--wh-focus-ring, #f0c879);
+  outline-offset: 2px;
+}
+
+@media (forced-colors: active) {
+  .wildharvest-window :is(button, .button, a, summary, .wildharvest-gm-tab, [role="tab"], [tabindex]:not([tabindex="-1"])):focus-visible {
+    outline-color: Highlight;
+  }
+}

@@ -19,67 +19,76 @@
   box-sizing: border-box;
 }
 
-@media (max-width: 1180px) {
-  .wildharvest-gm-main-grid {
-    grid-template-columns: 1fr;
+.wildharvest-rules-table .wildharvest-rules-table__actions {
+  width: 1%;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.wildharvest-rules-table__actions button {
+  width: auto;
+  min-width: 2rem;
+  line-height: var(--wh-lh-relaxed);
+}
+
+.wildharvest-rules-add-row {
+  width: auto;
+  margin-top: var(--wh-space-2);
+}
+
+/* 1.37.3: label | control rows of the loot rules window (the label stays on one line, the number field has a fixed width). */
+.wildharvest-rules-form .wildharvest-rules-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 7rem;
+  align-items: center;
+  gap: var(--wh-space-1) var(--wh-space-4);
+  margin-top: var(--wh-space-2);
+}
+
+.wildharvest-rules-form .wildharvest-rules-field > input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.wildharvest-rules-form .wildharvest-rules-check {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--wh-space-2);
+  margin-top: var(--wh-space-2);
+  cursor: pointer;
+}
+
+.wildharvest-rules-form .wildharvest-rules-check > span {
+  padding-top: 0.05rem;
+}
+
+@container wh-rules (max-width: 420px) {
+  .wildharvest-rules-form .wildharvest-rules-field {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .wildharvest-gm-live-summary {
-    grid-template-columns: 1fr;
-  }
-
-  .wildharvest-gm-live-summary .wildharvest-gm-live-filters {
-    grid-column: auto;
-  }
-
-  .wildharvest-gm-history-workbench {
-    grid-template-columns: 190px minmax(0, 1fr);
-  }
-
-  .wildharvest-gm-history-pane--details {
-    grid-column: 1 / -1;
-    min-height: 0;
-    height: auto;
-  }
-
-  .wildharvest-gm-history-detail__stats {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .wildharvest-gm-panel__title h2 {
-    font-size: 1.45rem;
-  }
-
-  .wildharvest-gm-tab {
-    padding-inline: 0.45rem;
-    font-size: 0.78rem;
+  .wildharvest-rules-form .wildharvest-rules-field > input {
+    max-width: 9rem;
   }
 }
 
-@media (max-width: 720px) {
-  .wildharvest-gm-tabs {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+/* 1.31.0 (F2): the Workbench layout follows the width of its window (container wh-gm), not the screen. */
+@container wh-gm (max-width: 1100px) {
+  .wildharvest-gm-panel__title h2 {
+    font-size: var(--wh-fs-2xl);
   }
 
-  .wildharvest-gm-stat-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .wildharvest-gm-tab {
+    padding-inline: var(--wh-space-2);
+    font-size: var(--wh-fs-xs);
   }
+}
 
-  .wildharvest-gm-stat {
-    border-bottom: 1px solid var(--wildharvest-gm-border-dark);
-  }
-
-  .wildharvest-gm-active-scene,
-  .wildharvest-gm-active-scene--empty {
-    grid-template-columns: 38px minmax(0, 1fr);
-  }
-
-  .wildharvest-gm-active-scene__aside {
-    grid-column: 2;
-    justify-items: start;
-    margin-left: 0;
-  }
-
+/* 1.33.1: the Presets table and the History panes switch to the stacked layout already in a
+   medium-width Workbench, where the table columns were too narrow (longer Polish texts). */
+@container wh-gm (max-width: 940px) {
   .wildharvest-gm-preset-toolbar {
     grid-template-columns: 1fr;
   }
@@ -99,22 +108,22 @@
   }
 
   .wildharvest-gm-preset-table__body {
-    gap: 0.5rem;
+    gap: var(--wh-space-2);
   }
 
   .wildharvest-gm-preset-row {
     grid-template-columns: 1fr;
     min-width: 0;
-    padding: 0.3rem;
+    padding: var(--wh-space-1);
     border: 1px solid var(--wildharvest-gm-border-dark);
-    border-radius: 3px;
+    border-radius: var(--wh-radius-sm);
   }
 
   .wildharvest-gm-preset-cell {
     display: grid;
     grid-template-columns: minmax(100px, 0.38fr) minmax(0, 1fr);
-    gap: 0.5rem;
-    padding: 0.42rem 0.5rem;
+    gap: var(--wh-space-2);
+    padding: var(--wh-space-2) var(--wh-space-2);
     border-right: 0;
     border-bottom: 1px solid var(--wildharvest-gm-border-dark);
   }
@@ -122,8 +131,8 @@
   .wildharvest-gm-preset-cell::before {
     content: attr(data-label);
     color: var(--wildharvest-gm-text-dim);
-    font-size: 0.75rem;
-    font-weight: 800;
+    font-size: var(--wh-fs-xs);
+    font-weight: var(--wh-fw-heavy);
     letter-spacing: 0.04em;
     text-transform: uppercase;
   }
@@ -136,8 +145,8 @@
     display: none;
   }
 
-  .wildharvest-gm-preset-cell--skill > span {
-    display: none;
+  .wildharvest-gm-preset-difficulty {
+    grid-column: 2;
   }
 
   .wildharvest-gm-preset-cell--actions {
@@ -159,6 +168,7 @@
     height: auto;
   }
 
+  .wildharvest-gm-history-pane--actors,
   .wildharvest-gm-history-pane--details {
     grid-column: auto;
   }
@@ -167,14 +177,33 @@
     max-height: 13rem;
   }
 
+  .wildharvest-gm-history-table {
+    max-height: 20rem;
+  }
+}
+
+@container wh-gm (max-width: 700px) {
+  .wildharvest-gm-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wildharvest-gm-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wildharvest-gm-stat {
+    border-bottom: 1px solid var(--wildharvest-gm-border-dark);
+  }
+
   .wildharvest-gm-history-table__header {
     display: none;
   }
 
-  .wildharvest-window--gm .wildharvest-gm-history-entry {
+  /* Same weight as the no-location table rule, so the narrow card layout wins (1.33.1). */
+  .wildharvest-window--gm .wildharvest-gm-history-table .wildharvest-gm-history-entry {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     min-width: 0;
-    padding: 0.3rem;
+    padding: var(--wh-space-1);
     border: 1px solid var(--wildharvest-gm-border-dark);
   }
 
@@ -182,7 +211,7 @@
   .wildharvest-gm-history-entry > strong {
     display: grid;
     grid-template-columns: minmax(80px, 0.45fr) minmax(0, 1fr);
-    gap: 0.35rem;
+    gap: var(--wh-space-1);
     border-right: 0;
     border-bottom: 1px solid var(--wildharvest-gm-border-dark);
     white-space: normal;
@@ -192,8 +221,8 @@
   .wildharvest-gm-history-entry > strong::before {
     content: attr(data-label);
     color: var(--wildharvest-gm-text-dim);
-    font-size: 0.75rem;
-    font-weight: 800;
+    font-size: var(--wh-fs-xs);
+    font-weight: var(--wh-fw-heavy);
     text-transform: uppercase;
   }
 
@@ -216,11 +245,14 @@
   }
 }
 
+/* The loot rules window itself is sized from the screen; its table follows the window (wh-rules). */
 @media (max-width: 840px) {
   .wildharvest-rules-settings {
     width: calc(100vw - 1rem) !important;
   }
+}
 
+@container wh-rules (max-width: 640px) {
   .wildharvest-rules-form {
     min-width: 0;
   }
@@ -239,9 +271,9 @@
 
   .wildharvest-rules-table tr {
     display: grid;
-    gap: 0.45rem;
-    margin-bottom: 0.65rem;
-    padding: 0.65rem;
+    gap: var(--wh-space-2);
+    margin-bottom: var(--wh-space-3);
+    padding: var(--wh-space-3);
     border: 1px solid var(--wildharvest-gm-border-dark);
     border-radius: var(--wildharvest-gm-radius-sm);
     background: var(--wildharvest-gm-bg-input);
@@ -251,7 +283,7 @@
     display: grid;
     grid-template-columns: minmax(8.5rem, 0.75fr) minmax(0, 1fr);
     align-items: center;
-    gap: 0.65rem;
+    gap: var(--wh-space-3);
     padding: 0;
     border: 0;
   }
@@ -259,14 +291,19 @@
   .wildharvest-rules-table td::before {
     content: attr(data-label);
     color: var(--wildharvest-gm-text-muted);
-    font-size: 0.75rem;
-    font-weight: 700;
-    line-height: 1.35;
+    font-size: var(--wh-fs-xs);
+    font-weight: var(--wh-fw-bold);
+    line-height: var(--wh-lh-normal);
+  }
+
+  .wildharvest-rules-table .wildharvest-rules-table__actions {
+    width: 100%;
+    text-align: start;
   }
 
   .wildharvest-rules-table__name {
     color: var(--wildharvest-gm-text);
-    font-weight: 700;
+    font-weight: var(--wh-fw-bold);
   }
 
   .wildharvest-rules-form .sheet-footer {
@@ -301,9 +338,5 @@
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-  }
-
-  .wildharvest-window--player .dialog-buttons button.default::after {
-    display: none !important;
   }
 }

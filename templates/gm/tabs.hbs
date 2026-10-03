@@ -1,0 +1,8 @@
+<nav class="wildharvest-gm-tabs" role="tablist" aria-label="{{localize "WILDHARVEST.Dialog.ControlPanel.TabsLabel"}}">
+  {{#each tabs}}
+  <button type="button" id="wildharvest-gm-tab-{{id}}" class="wildharvest-gm-tab{{#if active}} is-active{{/if}}" role="tab" data-gm-tab="{{id}}" aria-selected="{{#if active}}true{{else}}false{{/if}}"{{#if active}} aria-controls="wildharvest-gm-tabpanel-{{id}}"{{/if}} tabindex="{{#if active}}0{{else}}-1{{/if}}">
+    <i class="{{icon}} wildharvest-gm-tab__asset" aria-hidden="true"></i>
+    <span>{{label}}</span>
+  </button>
+  {{/each}}
+</nav>

@@ -1,0 +1,20 @@
+<div class="wildharvest-inline-actions wildharvest-inline-actions--end wildharvest-gm-session-actions">
+  {{#if showOpenResponses}}
+  <button type="button" class="button" data-action="gm-open-responses">
+    <i class="{{@root.icons.responses}} wildharvest-gm-button__asset" aria-hidden="true"></i>
+    <span>{{localize "WILDHARVEST.Dialog.ControlPanel.OpenResponses"}}</span>
+  </button>
+  {{/if}}
+  {{#if canSendReminder}}
+  <button type="button" class="button" data-action="gm-send-reminder">
+    <i class="{{@root.icons.reminder}} wildharvest-gm-button__asset" aria-hidden="true"></i>
+    <span>{{localize "WILDHARVEST.Dialog.ControlPanel.SendReminder"}}</span>
+  </button>
+  {{/if}}
+  {{#if canCloseScene}}
+  <button type="button" class="button" data-action="gm-close-scene">
+    <i class="{{@root.icons.closeScene}} wildharvest-gm-button__asset" aria-hidden="true"></i>
+    <span>{{localize "WILDHARVEST.Dialog.ControlPanel.CloseScene"}}</span>
+  </button>
+  {{/if}}
+</div>

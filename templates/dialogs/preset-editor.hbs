@@ -1,0 +1,57 @@
+<div class="wildharvest-dialog wildharvest-dialog--wide">
+  <div class="form-group">
+    <label>{{labels.name}}</label>
+    <input type="text" name="activityName" value="{{name}}">
+  </div>
+  <div class="form-group">
+    <label>{{labels.skill}}</label>
+    <select name="skillId">
+      {{#each skills}}<option value="{{id}}"{{#if selected}} selected{{/if}}>{{label}}</option>
+      {{/each}}
+    </select>
+  </div>
+  <div class="form-group">
+    <label>{{labels.difficulty}}</label>
+    <input type="number" name="presetDifficulty" value="{{difficulty}}" min="-{{difficultyLimit}}" max="{{difficultyLimit}}" step="1">
+    <p class="hint">{{labels.difficultyHint}}</p>
+  </div>
+  <div class="form-group">
+    <label>{{labels.description}}</label>
+    <textarea name="activityDescription" rows="4">{{description}}</textarea>
+  </div>
+  <div class="form-group">
+    <label>{{labels.compendiums}}</label>
+    <p class="hint">{{labels.compendiumsHint}}</p>
+  </div>
+  <div class="wildharvest-gm-editor-filters">
+    <input type="search" name="compendiumSearch" value="" aria-label="{{labels.searchPlaceholder}}" placeholder="{{labels.searchPlaceholder}}">
+    <select name="compendiumScope" aria-label="{{labels.scopeLabel}}">
+      {{#each scopes}}<option value="{{value}}">{{label}}</option>
+      {{/each}}
+    </select>
+  </div>
+  <div data-compendium-selection>
+    {{> wildharvest.compendiumList compendiumList}}
+  </div>
+  <div class="form-group">
+    <label>{{labels.folders}}</label>
+    <p class="hint">{{labels.foldersHint}}</p>
+  </div>
+  <div data-folder-selection>
+    {{> wildharvest.folderList folderList}}
+  </div>
+  <div class="form-group">
+    <label>{{labels.tables}}</label>
+    <p class="hint">{{labels.tablesHint}}</p>
+  </div>
+  <div class="form-group">
+    <label>{{labels.tableMode}}</label>
+    <select name="presetTableMode">
+      {{#each tableModes}}<option value="{{value}}"{{#if selected}} selected{{/if}}>{{label}}</option>
+      {{/each}}
+    </select>
+  </div>
+  <div data-table-selection>
+    {{> wildharvest.tableList tableList}}
+  </div>
+</div>

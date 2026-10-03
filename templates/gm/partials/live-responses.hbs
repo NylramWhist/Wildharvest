@@ -1,0 +1,30 @@
+<article class="wildharvest-gm-card wildharvest-gm-card--secondary wildharvest-gm-live-card">
+  <div class="wildharvest-gm-card__header">
+    <div>
+      <h3>{{localize "WILDHARVEST.Dialog.ControlPanel.LiveResponsesTitle"}}</h3>
+      <p>{{localize "WILDHARVEST.Dialog.ControlPanel.LiveResponsesHint"}}</p>
+    </div>
+    {{#if session}}{{> wildharvest.gmSessionActions actions}}{{/if}}
+  </div>
+  {{#if session}}
+  <div class="wildharvest-gm-live-summary">
+    <div class="wildharvest-gm-live-summary__scene">
+      <strong>{{sessionName}}</strong>
+      <p>{{sessionMeta}}</p>
+      {{#if closedMeta}}<p class="wildharvest-gm-live-summary__meta">{{closedMeta}}</p>{{/if}}
+    </div>
+    <div class="wildharvest-gm-progress wildharvest-gm-progress--badge">
+      <strong class="wildharvest-gm-progress__count">{{progressCount}}</strong>
+      <span class="wildharvest-gm-progress__label">{{localize "WILDHARVEST.Dialog.ControlPanel.Completed"}}</span>
+    </div>
+    {{> wildharvest.gmFilterButtons filters}}
+  </div>
+  {{> wildharvest.gmResponseList responses}}
+  {{else}}
+  <div class="wildharvest-gm-empty-state-card">
+    <i class="{{@root.icons.pending}} wildharvest-gm-empty-state-card__asset" aria-hidden="true"></i>
+    <strong>{{localize "WILDHARVEST.Dialog.ControlPanel.LiveResponsesEmpty"}}</strong>
+    <p>{{localize "WILDHARVEST.Dialog.ControlPanel.LiveResponsesHint"}}</p>
+  </div>
+  {{/if}}
+</article>

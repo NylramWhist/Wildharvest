@@ -1,37 +1,45 @@
 import {
   MODULE_ID,
-  PLAYER_REQUEST_FLAG,
+  PLAYER_REQUESTS_FLAG,
   SEARCH_SESSIONS_SETTING_KEY
 } from "../constants.js";
 import { getAvailableActors } from "../helpers/actor-utils.js";
-import { getModuleLocaleTag, t } from "../i18n.js";
+import { t } from "../i18n.js";
 import {
   getActivitySkillLabel,
   getActorSkillModifier,
-  getDnd5eSkillChoices,
   getDnd5eSkillLabel
 } from "../helpers/dnd5e-support.js";
-import { getRewardStackText } from "../helpers/reward-utils.js";
 import { getActorSearchLog } from "../helpers/resource-store.js";
 import { getActiveGmId, isActiveGmUser } from "../helpers/active-gm-core.js";
 import {
   buildPlayerDocumentRequest,
+  getExpiredPlayerRequestKeys,
   isValidPlayerDocumentRequest,
+  listStoredPlayerRequests,
   PLAYER_REQUEST_TYPES
 } from "../helpers/player-request-core.js";
+import { compactSessionResult } from "../helpers/data-format-core.js";
 import {
   claimSearchResolution,
   completeSearchResolution,
   failSearchResolution
 } from "../helpers/search-authority-core.js";
 import {
+  emitGmLootReview,
+  emitGmPresence,
   emitGmSearchResolution,
   emitSearchOffer,
   emitSearchSessionClosed,
   emitSearchSessionSync,
+  getSocketClientId,
   SOCKET_EVENT,
   SOCKET_MESSAGE_TYPES
 } from "../helpers/search-session-socket.js";
+import {
+  createGmPresenceTracker,
+  GM_PRESENCE_HEARTBEAT_MS
+} from "../helpers/gm-presence-core.js";
 import {
   MAX_PERSISTED_SESSIONS,
   collectPersistedSearchSessions,
@@ -44,42 +52,48 @@ import {
   openSearchResultFromLog,
   resolveSearchAsGm
 } from "./search-dialog.js";
-import {
-  escapeHtml,
-  getDialogForm,
-  linkFormLabels
-} from "./dialog-utils.js";
 import { openPlayerSearchOfferDialog } from "./player-search-offer-dialog.js";
+import { reviewLootAsGm } from "./loot-review-dialog.js";
 import {
   getLocations,
-  getLootPoolLabel,
   getRulesConfig,
-  getSelectedRandomLootPackLabel,
-  hasSelectedRandomLootPacks
+  isLootApprovalEnabled
 } from "../settings.js";
 
 const DialogV2 = foundry.applications.api.DialogV2;
-const ACTIVITY_CATALOG_LOCATION_ID = "wildharvest-options";
 export const ASSIGNMENT_MODE = {
   WHOLE_PARTY: "whole-party",
   PER_PLAYER: "per-player"
 };
 let socketListenersRegistered = false;
-let responsesDialog = null;
 const playerOfferDialogs = new Map();
+const playerSearchDialogs = new Map();
 const pendingPlayerResults = new Map();
 const closedSessionIds = new Set();
 const searchSessions = new Map();
 const sessionListeners = new Set();
 const processedPlayerRequestIds = new Set();
+const queuedPlayerRequestIds = new Set();
 let sessionPersistence = Promise.resolve();
 let playerRequestQueue = Promise.resolve();
 let interruptedResolutionTimer = null;
 let lastKnownActiveGmId = "";
+// 1.34.0: "sessionId:userId" of the resolutions whose loot review window is open in this client.
+const activeLootReviews = new Set();
 const INTERRUPTED_RESOLUTION_GRACE_MS = 30_000;
+const PLAYER_RESOLUTION_RESPONSE_TIMEOUT_MS = 60_000;
+// 1.34.0: how long a player waits for the GM's loot review before being told nothing came back yet.
+const PLAYER_LOOT_REVIEW_TIMEOUT_MS = 10 * 60_000;
+const INVALID_PLAYER_REQUEST_REASON = "invalid-request";
 
+function getServerNow() {
+  const serverTime = Number(game.time?.serverTime);
+  return Number.isFinite(serverTime) && serverTime > 0 ? serverTime : Date.now();
+}
+
+// Stored as ISO 8601 since 1.21.0; views format it in the module language.
 function getNowTimestamp() {
-  return new Date().toLocaleString(getModuleLocaleTag());
+  return new Date().toISOString();
 }
 
 function getOfferContext(locations, locationId, activityId) {
@@ -88,16 +102,64 @@ function getOfferContext(locations, locationId, activityId) {
   return { location, activity };
 }
 
-function isHiddenActivityCatalog(location) {
-  return String(location?.id ?? "").trim() === ACTIVITY_CATALOG_LOCATION_ID;
-}
-
-function getActivePlayers() {
-  return (game.users?.contents ?? []).filter((user) => user.active && !user.isGM);
-}
-
 function isCurrentUserActiveGm() {
   return isActiveGmUser(game.user, game.users?.activeGM);
+}
+
+// A9: of several windows logged in as the active GM, only the oldest one handles player requests.
+let gmPresence = null;
+let gmPresenceTimer = null;
+let wasPrimaryGmWindow = false;
+let gmPresenceSettling = false;
+const GM_PRESENCE_SETTLE_MS = 1_500;
+
+export function isCurrentUserPrimaryGm() {
+  if (!isCurrentUserActiveGm()) return false;
+  // A window that has just announced itself waits for older windows to answer before taking requests.
+  if (gmPresenceSettling) return false;
+  return gmPresence ? gmPresence.isLeader(Date.now()) : true;
+}
+
+function onPrimaryGmWindowCheck() {
+  if (gmPresenceSettling) return;
+  const isPrimary = isCurrentUserPrimaryGm();
+  if (isPrimary && !wasPrimaryGmWindow) {
+    // Took over from a window that closed: reload the scenes it saved and handle waiting requests.
+    wasPrimaryGmWindow = true;
+    initializeSearchSessions();
+    void processPendingPlayerRequests();
+    return;
+  }
+  wasPrimaryGmWindow = isPrimary;
+}
+
+function handleGmPresence(message) {
+  if (!gmPresence || !game.user?.isGM || message.senderId !== game.user.id) return;
+  if (message.leaving) {
+    gmPresence.forget(message.clientId);
+  } else if (gmPresence.see(message, Date.now())) {
+    // A window we did not know yet: answer so it learns about this one without waiting for a heartbeat.
+    emitGmPresence({ startedAt: gmPresence.self.startedAt });
+  }
+  onPrimaryGmWindowCheck();
+}
+
+// Announces this GM window and waits briefly for older windows of the same user to answer.
+export async function startGmPresence() {
+  if (!game.user?.isGM || gmPresence) return;
+  gmPresenceSettling = true;
+  gmPresence = createGmPresenceTracker({ clientId: getSocketClientId(), startedAt: Date.now() });
+  emitGmPresence({ startedAt: gmPresence.self.startedAt });
+  gmPresenceTimer = setInterval(() => {
+    emitGmPresence({ startedAt: gmPresence.self.startedAt });
+    onPrimaryGmWindowCheck();
+  }, GM_PRESENCE_HEARTBEAT_MS);
+  globalThis.addEventListener?.("beforeunload", () => {
+    emitGmPresence({ startedAt: gmPresence.self.startedAt, leaving: true });
+  });
+  await new Promise((resolve) => setTimeout(resolve, GM_PRESENCE_SETTLE_MS));
+  gmPresenceSettling = false;
+  wasPrimaryGmWindow = isCurrentUserPrimaryGm();
 }
 
 function requireActiveGm() {
@@ -118,12 +180,21 @@ async function submitPlayerDocumentRequest(data) {
   const request = buildPlayerDocumentRequest({
     ...data,
     id: createPlayerRequestId(),
-    createdAt: Date.now()
+    createdAt: getServerNow()
   });
-  if (!isValidPlayerDocumentRequest(request)) {
+  if (!isValidPlayerDocumentRequest(request, { now: getServerNow() })) {
     throw new Error(t("WILDHARVEST.Errors.InvalidPlayerRequest"));
   }
-  await game.user.setFlag(MODULE_ID, PLAYER_REQUEST_FLAG, request);
+  // Each request has its own key, so it never merges with one the GM has not handled yet.
+  // Only this player's requests that the GM would reject as too old are removed here.
+  const expiredKeys = getExpiredPlayerRequestKeys(
+    game.user.getFlag(MODULE_ID, PLAYER_REQUESTS_FLAG),
+    { now: getServerNow() }
+  );
+  for (const key of expiredKeys) {
+    await game.user.unsetFlag(MODULE_ID, `${PLAYER_REQUESTS_FLAG}.${key}`);
+  }
+  await game.user.setFlag(MODULE_ID, `${PLAYER_REQUESTS_FLAG}.${request.id}`, request);
   return request;
 }
 
@@ -135,10 +206,6 @@ async function submitPlayerDecisionRequest(data) {
     ui.notifications.error(t("WILDHARVEST.Notifications.ActionFailed"));
     return null;
   }
-}
-
-function getPlayerCharacterName(user) {
-  return user.character?.name || t("WILDHARVEST.Dialog.Offer.NoCharacter");
 }
 
 function createSessionId() {
@@ -162,216 +229,6 @@ function buildOfferActivity(location, activity, selectedSkillId) {
     ...effectiveActivity,
     lootPoolId: String(activity?.lootPoolId ?? location?.lootPoolId ?? "").trim() || null
   };
-}
-
-function getOfferLootPoolLabel(location, activity) {
-  const lootPoolId = String(activity?.lootPoolId ?? location?.lootPoolId ?? "").trim();
-  if (lootPoolId) {
-    return getLootPoolLabel(lootPoolId);
-  }
-
-  if (hasSelectedRandomLootPacks()) {
-    return getSelectedRandomLootPackLabel();
-  }
-
-  return "";
-}
-
-function renderActivityOptions(location, selectedActivityId) {
-  return location.activities
-    .map((activity) => {
-      const selected = activity.id === selectedActivityId ? " selected" : "";
-      return `<option value="${escapeHtml(activity.id)}"${selected}>${escapeHtml(activity.name)}</option>`;
-    })
-    .join("");
-}
-
-function renderSkillOptions(selectedSkillId = "") {
-  const dnd5eSkillChoices = getDnd5eSkillChoices();
-  const defaultSelected = !selectedSkillId ? " selected" : "";
-  const options = dnd5eSkillChoices
-    .map((entry) => {
-      const selected = entry.id === selectedSkillId ? " selected" : "";
-      return `<option value="${escapeHtml(entry.id)}"${selected}>${escapeHtml(entry.label)}</option>`;
-    })
-    .join("");
-
-  return `
-    <option value=""${defaultSelected}>${escapeHtml(t("WILDHARVEST.Dialog.Offer.UseActivitySkill"))}</option>
-    ${options}
-  `;
-}
-
-function renderOfferPreview(location, activity, selectedSkillId = "") {
-  if (!location || !activity) {
-    return `<p class="wildharvest-empty">${escapeHtml(t("WILDHARVEST.Preview.InvalidConfig"))}</p>`;
-  }
-
-  const effectiveActivity = buildOfferActivity(location, activity, selectedSkillId);
-  const skillLabel = getActivitySkillLabel(effectiveActivity) || effectiveActivity.skillLabel;
-  const lootPoolLabel = getOfferLootPoolLabel(location, effectiveActivity);
-  const description = String(activity.description ?? location.description ?? "").trim();
-  const lootPoolMarkup = lootPoolLabel
-    ? `<p>${escapeHtml(t("WILDHARVEST.Preview.LootPoolValue", { lootPool: lootPoolLabel }))}</p>`
-    : `<p class="wildharvest-muted">${escapeHtml(t("WILDHARVEST.Preview.CompendiumRequired"))}</p>`;
-  const locationMarkup = isHiddenActivityCatalog(location)
-    ? ""
-    : `
-      <div class="wildharvest-preview__block">
-        <strong>${escapeHtml(location.name)}</strong>
-        <p>${escapeHtml(location.description || t("WILDHARVEST.Preview.NoLocationDescription"))}</p>
-      </div>
-    `;
-
-  return `
-    ${locationMarkup}
-    <div class="wildharvest-preview__block">
-      <strong>${escapeHtml(activity.name)}</strong>
-      <p>${escapeHtml(t("WILDHARVEST.Preview.Test", {
-        skillLabel
-      }))}</p>
-      ${description ? `<p>${escapeHtml(description)}</p>` : ""}
-      ${lootPoolMarkup}
-    </div>
-  `;
-}
-
-function renderPerPlayerRows(players, locations) {
-  const initialLocation = locations[0];
-  const initialActivity = initialLocation.activities[0];
-
-  return players
-    .map((user) => `
-      <tr data-player-row="${escapeHtml(user.id)}">
-        <td class="wildharvest-table__value">
-          <input type="checkbox" name="targetUser-${escapeHtml(user.id)}" aria-label="${escapeHtml(`${t("WILDHARVEST.Dialog.Offer.SendTo")}: ${user.name}`)}" checked>
-        </td>
-        <td>${escapeHtml(user.name)}</td>
-        <td>${escapeHtml(getPlayerCharacterName(user))}</td>
-        <td>
-          <select name="playerActivity-${escapeHtml(user.id)}" data-player-activity="${escapeHtml(user.id)}" aria-label="${escapeHtml(`${t("WILDHARVEST.Dialog.Search.Activity")}: ${user.name}`)}">
-            ${renderActivityOptions(initialLocation, initialActivity.id)}
-          </select>
-        </td>
-        <td>
-          <select name="playerSkill-${escapeHtml(user.id)}" data-player-skill="${escapeHtml(user.id)}" aria-label="${escapeHtml(`${t("WILDHARVEST.Dialog.Offer.Skill")}: ${user.name}`)}">
-            ${renderSkillOptions("")}
-          </select>
-        </td>
-      </tr>
-    `)
-    .join("");
-}
-
-function refreshWholePartyActivityOptions(dialog, locations) {
-  const form = getDialogForm(dialog);
-  if (!form) return;
-
-  const { location } = getOfferContext(locations, null, null);
-  const activitySelect = form.elements.activityId;
-  const skillSelect = form.elements.skillId;
-  if (!location || !activitySelect) return;
-
-  const currentActivityId = String(activitySelect.value ?? "");
-  const nextActivityId = location.activities.some((entry) => entry.id === currentActivityId)
-    ? currentActivityId
-    : location.activities[0]?.id;
-
-  activitySelect.innerHTML = renderActivityOptions(location, nextActivityId);
-  activitySelect.value = nextActivityId;
-
-  const { activity } = getOfferContext(locations, location.id, nextActivityId);
-  const preview = dialog.element.querySelector("[data-offer-preview]");
-  if (preview && activity) {
-    preview.innerHTML = renderOfferPreview(location, activity, String(skillSelect?.value ?? ""));
-  }
-}
-
-function refreshAssignmentMode(dialog) {
-  const form = getDialogForm(dialog);
-  if (!form) return;
-
-  const mode = String(form.elements.assignmentMode?.value ?? ASSIGNMENT_MODE.WHOLE_PARTY);
-  const wholePartySection = dialog.element.querySelector("[data-assignment-mode='whole-party']");
-  const perPlayerSection = dialog.element.querySelector("[data-assignment-mode='per-player']");
-
-  if (wholePartySection) wholePartySection.hidden = mode !== ASSIGNMENT_MODE.WHOLE_PARTY;
-  if (perPlayerSection) perPlayerSection.hidden = mode !== ASSIGNMENT_MODE.PER_PLAYER;
-}
-
-function attachOfferListeners(dialog, locations) {
-  linkFormLabels(dialog.element, "search-offer");
-  const form = getDialogForm(dialog);
-  if (!form) return;
-
-  form.elements.assignmentMode?.addEventListener("change", () => refreshAssignmentMode(dialog));
-  form.elements.activityId?.addEventListener("change", () => refreshWholePartyActivityOptions(dialog, locations));
-  form.elements.skillId?.addEventListener("change", () => refreshWholePartyActivityOptions(dialog, locations));
-
-  refreshWholePartyActivityOptions(dialog, locations);
-  refreshAssignmentMode(dialog);
-}
-
-function buildWholePartyOffers(players, form, locations) {
-  const activityId = String(form.elements.activityId?.value ?? "");
-  const { location, activity } = getOfferContext(locations, null, activityId);
-  if (!location) throw new Error(t("WILDHARVEST.Errors.LocationMissing"));
-  if (!activity) throw new Error(t("WILDHARVEST.Errors.ActivityMissing"));
-  const selectedSkillId = String(form.elements.skillId?.value ?? "").trim().toLowerCase();
-  const effectiveActivity = buildOfferActivity(location, activity, selectedSkillId);
-  const skillLabel = getActivitySkillLabel(effectiveActivity) || effectiveActivity.skillLabel;
-  const lootPoolLabel = getOfferLootPoolLabel(location, effectiveActivity);
-
-  return Object.fromEntries(players.map((user) => [
-    user.id,
-    {
-      userId: user.id,
-      userName: user.name,
-      characterName: getPlayerCharacterName(user),
-      locationId: location.id,
-      locationName: location.name,
-      activityId: activity.id,
-      activityName: activity.name,
-      lootPoolId: effectiveActivity.lootPoolId ?? "",
-      lootPoolLabel,
-      skillId: effectiveActivity.skillId ?? "",
-      skillLabel
-    }
-  ]));
-}
-
-function buildPerPlayerOffers(players, form, locations) {
-  const offers = {};
-
-  for (const user of players) {
-    const enabled = form.elements[`targetUser-${user.id}`]?.checked;
-    if (!enabled) continue;
-
-    const activityId = String(form.elements[`playerActivity-${user.id}`]?.value ?? "");
-    const { location, activity } = getOfferContext(locations, null, activityId);
-    if (!location) throw new Error(t("WILDHARVEST.Errors.LocationMissing"));
-    if (!activity) throw new Error(t("WILDHARVEST.Errors.ActivityMissing"));
-    const selectedSkillId = String(form.elements[`playerSkill-${user.id}`]?.value ?? "").trim().toLowerCase();
-    const effectiveActivity = buildOfferActivity(location, activity, selectedSkillId);
-    const skillLabel = getActivitySkillLabel(effectiveActivity) || effectiveActivity.skillLabel;
-    const lootPoolLabel = getOfferLootPoolLabel(location, effectiveActivity);
-
-    offers[user.id] = {
-      userId: user.id,
-      userName: user.name,
-      characterName: getPlayerCharacterName(user),
-      locationId: location.id,
-      locationName: location.name,
-      activityId: activity.id,
-      activityName: activity.name,
-      lootPoolId: effectiveActivity.lootPoolId ?? "",
-      lootPoolLabel,
-      skillId: effectiveActivity.skillId ?? "",
-      skillLabel
-    };
-  }
-
-  return offers;
 }
 
 function isSessionClosed(session) {
@@ -416,129 +273,7 @@ function createSessionRecord(sessionId, mode, offersByUserId) {
   };
 }
 
-function renderStatus(status) {
-  const statusKey = {
-    pending: "WILDHARVEST.Dialog.Responses.Pending",
-    accepted: "WILDHARVEST.Dialog.Responses.Accepted",
-    declined: "WILDHARVEST.Dialog.Responses.Declined",
-    resolving: "WILDHARVEST.Dialog.Responses.Resolving",
-    failed: "WILDHARVEST.Dialog.Responses.Failed",
-    completed: "WILDHARVEST.Dialog.Responses.Completed"
-  }[status] ?? "WILDHARVEST.Dialog.Responses.Pending";
-
-  return t(statusKey);
-}
-
-function renderResultLine(entry) {
-  if (!entry.result) return t("WILDHARVEST.Dialog.Responses.NoResult");
-
-  const baseLine = t("WILDHARVEST.Dialog.Responses.RollLine", {
-    rollTotal: entry.result.rollTotal,
-    skillName: entry.result.skillName
-  });
-
-  if (!Number.isFinite(Number(entry.result.lootPoints)) || Number(entry.result.lootPoints) <= 0) {
-    return baseLine;
-  }
-
-  return `${baseLine} | ${t("WILDHARVEST.Dialog.Responses.LootPoints", { lootPoints: entry.result.lootPoints })}`;
-}
-
-function renderAssignmentLine(entry) {
-  if (isHiddenActivityCatalog({ id: entry.locationId })) {
-    return entry.activityName;
-  }
-
-  return `${entry.locationName} / ${entry.activityName}`;
-}
-
-function renderRewardsLine(entry) {
-  if (!entry.result?.rewards?.length) return t("WILDHARVEST.Dialog.Responses.NoRewards");
-
-  return entry.result.rewards
-    .map((reward) => getRewardStackText(reward))
-    .join(", ");
-}
-
-function renderSessionClosedLine(session) {
-  if (!isSessionClosed(session)) return "";
-
-  return `
-    <br>
-    ${escapeHtml(t("WILDHARVEST.Dialog.ControlPanel.SceneClosedMeta", {
-      closedAt: session.closedAt
-    }))}
-  `;
-}
-
-function renderSessionsMarkup() {
-  const sessions = [...searchSessions.values()].reverse();
-  if (!sessions.length) {
-    return `<p class="wildharvest-empty">${escapeHtml(t("WILDHARVEST.Dialog.Responses.Empty"))}</p>`;
-  }
-
-  return sessions
-    .map((session) => {
-      const rows = Object.values(session.offers)
-        .map((entry) => `
-          <tr>
-            <td>
-              <strong>${escapeHtml(entry.userName)}</strong>
-              <br>
-              <span class="wildharvest-muted">${escapeHtml(entry.actorName || entry.linkedCharacterName)}</span>
-            </td>
-            <td>
-              ${escapeHtml(renderAssignmentLine(entry))}
-              <br>
-              <span class="wildharvest-muted">${escapeHtml(entry.skillLabel ?? "")}</span>
-              ${entry.lootPoolLabel ? `<br><span class="wildharvest-muted">${escapeHtml(t("WILDHARVEST.Preview.LootPoolValue", { lootPool: entry.lootPoolLabel }))}</span>` : ""}
-            </td>
-            <td>${escapeHtml(renderStatus(entry.status))}</td>
-            <td>${escapeHtml(renderResultLine(entry))}</td>
-            <td>${escapeHtml(renderRewardsLine(entry))}</td>
-            <td>${escapeHtml(entry.updatedAt ?? "")}</td>
-          </tr>
-        `)
-        .join("");
-
-      const modeLabel = session.mode === ASSIGNMENT_MODE.PER_PLAYER
-        ? t("WILDHARVEST.Dialog.Responses.ModePerPlayer")
-        : t("WILDHARVEST.Dialog.Responses.ModeParty");
-
-      return `
-        <section class="wildharvest-preview__block">
-          <strong>${escapeHtml(session.id)}</strong>
-          <p>
-            ${escapeHtml(t("WILDHARVEST.Dialog.Responses.Mode"))}: ${escapeHtml(modeLabel)}
-            <br>
-            ${escapeHtml(t("WILDHARVEST.Dialog.Responses.Created"))}: ${escapeHtml(session.createdAt)}
-            ${renderSessionClosedLine(session)}
-          </p>
-          <table class="wildharvest-table">
-            <thead>
-              <tr>
-                <th>${escapeHtml(t("WILDHARVEST.Dialog.Offer.Player"))}</th>
-                <th>${escapeHtml(t("WILDHARVEST.Dialog.Responses.Assignment"))}</th>
-                <th>${escapeHtml(t("WILDHARVEST.Dialog.Responses.Status"))}</th>
-                <th>${escapeHtml(t("WILDHARVEST.Dialog.Responses.Result"))}</th>
-                <th>${escapeHtml(t("WILDHARVEST.Dialog.Responses.Rewards"))}</th>
-                <th>${escapeHtml(t("WILDHARVEST.Dialog.Responses.Updated"))}</th>
-              </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </section>
-      `;
-    })
-    .join("");
-}
-
-function refreshResponsesDialog() {
-  const container = responsesDialog?.element?.querySelector("[data-search-sessions]");
-  if (container) {
-    container.innerHTML = renderSessionsMarkup();
-  }
-
+function notifySessionListeners() {
   for (const listener of sessionListeners) {
     try {
       listener(getSearchSessionsSnapshot());
@@ -548,36 +283,32 @@ function refreshResponsesDialog() {
   }
 }
 
+// Scene results are summaries since 1.21.0; the full result stays in the actor history.
 function buildPersistedResultFromLog(entry) {
-  const baseSkillModifier = Number(entry?.baseSkillModifier ?? entry?.finalSkillModifier ?? 0);
-  const extraModifier = Number(entry?.extraModifier ?? 0);
-  return {
-    rollTotal: Number(entry?.rollTotal ?? 0),
-    skillName: String(entry?.skillName ?? ""),
-    lootPoints: Number(entry?.lootSummary?.lootPoints ?? 0),
-    lootStrategy: entry?.lootSummary?.strategy ?? "rarity",
-    baseSkillModifier,
-    extraModifier,
-    finalSkillModifier: Number(entry?.finalSkillModifier ?? baseSkillModifier + extraModifier),
-    rollMode: String(entry?.rollMode ?? (entry?.advantage ? "advantage" : "normal")),
-    containerId: entry?.storageState?.containerId ?? "",
-    containerName: entry?.storageState?.containerName ?? "",
-    selectionGroups: entry?.lootSummary?.selectionGroups ?? [],
-    rarityGroups: entry?.lootSummary?.rarityGroups ?? [],
-    rewards: (Array.isArray(entry?.rewards) ? entry.rewards : []).map((reward) => ({
-      id: reward.id,
-      name: reward.name,
-      quantity: reward.quantity
-    }))
-  };
+  return compactSessionResult({
+    rollTotal: entry?.rollTotal,
+    skillName: entry?.skillName,
+    lootPoints: entry?.lootSummary?.lootPoints,
+    lootStrategy: entry?.lootSummary?.strategy,
+    baseSkillModifier: entry?.baseSkillModifier,
+    extraModifier: entry?.extraModifier,
+    finalSkillModifier: entry?.finalSkillModifier,
+    rollMode: entry?.rollMode,
+    advantage: entry?.advantage,
+    containerId: entry?.storageState?.containerId,
+    containerName: entry?.storageState?.containerName,
+    rewards: entry?.rewards,
+    rewardCount: entry?.rewardCount
+  });
 }
 
 async function recoverInterruptedResolutions() {
   interruptedResolutionTimer = null;
-  if (!isCurrentUserActiveGm()) return;
+  if (!isCurrentUserPrimaryGm()) return;
 
   const recovery = settleInterruptedResolutions(searchSessions, {
     timestamp: getNowTimestamp(),
+    isStillResolving: (session, entry) => activeLootReviews.has(`${session?.id}:${entry?.userId}`),
     getRecoveredResult: (session, entry) => {
       const actor = game.actors?.get(String(entry?.actorId ?? ""));
       if (!actor) return null;
@@ -588,7 +319,7 @@ async function recoverInterruptedResolutions() {
   });
 
   if (!recovery.changed) return;
-  refreshResponsesDialog();
+  notifySessionListeners();
   await scheduleSearchSessionPersistence();
   ui.notifications.warn(t("WILDHARVEST.Notifications.InterruptedResolutionsRecovered", {
     recovered: recovery.recovered,
@@ -601,7 +332,7 @@ function scheduleInterruptedResolutionRecovery() {
     clearTimeout(interruptedResolutionTimer);
     interruptedResolutionTimer = null;
   }
-  if (!isCurrentUserActiveGm()) return;
+  if (!isCurrentUserPrimaryGm()) return;
   const hasResolvingEntries = [...searchSessions.values()]
     .some((session) => Object.values(session?.offers ?? {}).some((entry) => entry?.status === "resolving"));
   if (!hasResolvingEntries) return;
@@ -663,7 +394,7 @@ export function initializeSearchSessions() {
     closedSessionIds.add(sessionId);
   }
 
-  refreshResponsesDialog();
+  notifySessionListeners();
   scheduleInterruptedResolutionRecovery();
 }
 
@@ -672,11 +403,11 @@ export function handleActiveGmChange() {
   const activeGmId = getCurrentActiveGmId();
   if (activeGmId === lastKnownActiveGmId) return;
   initializeSearchSessions();
-  if (isCurrentUserActiveGm()) void processPendingPlayerRequests();
+  if (isCurrentUserPrimaryGm()) void processPendingPlayerRequests();
 }
 function upsertSession(session) {
   searchSessions.set(session.id, session);
-  refreshResponsesDialog();
+  notifySessionListeners();
   return scheduleSearchSessionPersistence();
 }
 
@@ -689,7 +420,7 @@ function updateSessionEntry(sessionId, userId, updater, options = {}) {
   if (!entry) return Promise.resolve(false);
 
   updater(entry);
-  refreshResponsesDialog();
+  notifySessionListeners();
   return scheduleSearchSessionPersistence();
 }
 
@@ -706,7 +437,7 @@ export function subscribeToSearchSessions(listener) {
   };
 }
 
-export function sendSearchOffers(offersByUserId, mode, options = {}) {
+export function sendSearchOffers(offersByUserId, mode) {
   if (!requireActiveGm()) return;
 
   const targetUserIds = Object.keys(offersByUserId);
@@ -715,15 +446,8 @@ export function sendSearchOffers(offersByUserId, mode, options = {}) {
     return;
   }
 
-  const {
-    openResponses = true
-  } = options;
-
   const sessionId = createSessionId();
   upsertSession(createSessionRecord(sessionId, mode, offersByUserId));
-  if (openResponses) {
-    openSearchResponsesDialog();
-  }
 
   for (const targetUserId of targetUserIds) {
     emitSearchOffer({
@@ -772,6 +496,11 @@ export function closeSearchSession(sessionId, options = {}) {
     ui.notifications.warn(t("WILDHARVEST.Notifications.SceneAlreadyClosed"));
     return false;
   }
+  // 1.34.0: a roll whose loot is in an open review window is finished first.
+  if (Object.values(session.offers ?? {}).some((entry) => activeLootReviews.has(`${session.id}:${entry?.userId}`))) {
+    ui.notifications.warn(t("WILDHARVEST.Notifications.SceneCloseBlockedReview"));
+    return false;
+  }
 
   session.closedAt = getNowTimestamp();
   session.closedByName = game.user?.name ?? "";
@@ -802,25 +531,19 @@ function handlePlayerDecision(message) {
 }
 
 function buildPersistedResolutionResult(summary) {
-  return {
-    rollTotal: Number(summary.result.roll?.total ?? 0),
+  return compactSessionResult({
+    rollTotal: summary.result.roll?.total,
     skillName: summary.result.skillName,
-    lootPoints: Number(summary.result.lootSummary?.lootPoints ?? 0),
-    lootStrategy: summary.result.lootSummary?.strategy ?? "rarity",
-    baseSkillModifier: Number(summary.rollAudit?.baseSkillModifier ?? summary.result.modifier ?? 0),
-    extraModifier: Number(summary.rollAudit?.extraModifier ?? 0),
-    finalSkillModifier: Number(summary.rollAudit?.finalSkillModifier ?? summary.result.modifier ?? 0),
-    rollMode: String(summary.rollAudit?.rollMode ?? summary.result.rollMode ?? "normal"),
-    containerId: summary.storageSummary?.containerId ?? "",
-    containerName: summary.storageSummary?.containerName ?? "",
-    selectionGroups: summary.result.lootSummary?.selectionGroups ?? [],
-    rarityGroups: summary.result.lootSummary?.rarityGroups ?? [],
-    rewards: summary.result.rewards.map((reward) => ({
-      id: reward.id,
-      name: reward.name,
-      quantity: reward.quantity
-    }))
-  };
+    lootPoints: summary.result.lootSummary?.lootPoints,
+    lootStrategy: summary.result.lootSummary?.strategy,
+    baseSkillModifier: summary.rollAudit?.baseSkillModifier ?? summary.result.modifier,
+    extraModifier: summary.rollAudit?.extraModifier,
+    finalSkillModifier: summary.rollAudit?.finalSkillModifier ?? summary.result.modifier,
+    rollMode: summary.rollAudit?.rollMode ?? summary.result.rollMode,
+    containerId: summary.storageSummary?.containerId,
+    containerName: summary.storageSummary?.containerName,
+    rewards: summary.result.rewards
+  });
 }
 
 function rejectPlayerResolution(message, reason) {
@@ -890,7 +613,41 @@ function handlePlayerResolutionRequest(message) {
     || effectiveActivity.skillLabel;
   const baseSkillModifier = getActorSkillModifier(claim.actor, effectiveActivity) ?? 0;
 
-  return claimPersistence.then((persisted) => {
+  // 1.34.0: with "GM approves the loot" on, the GM sees the loot before anything is given. The player
+  // is told it is waiting for the GM, and the Workbench shows the entry as waiting for approval.
+  const lootApproval = isLootApprovalEnabled();
+  const isReviewStillCurrent = () => isCurrentUserActiveGm()
+    && searchSessions.get(session.id) === session
+    && claim.entry.status === "resolving";
+  const reviewKey = `${session.id}:${claim.entry.userId ?? message.senderId}`;
+  const reviewLoot = lootApproval
+    ? async (result) => {
+      // Nothing to approve: a roll without items goes straight to the player.
+      if (!Array.isArray(result?.rewards) || !result.rewards.length) return null;
+      activeLootReviews.add(reviewKey);
+      claim.entry.lootReviewPending = true;
+      claim.entry.updatedAt = getNowTimestamp();
+      void upsertSession(session).catch(() => false);
+      emitGmLootReview({ sessionId: message.sessionId, targetUserId: message.senderId });
+      try {
+        const reviewed = await reviewLootAsGm({
+          playerName: sender?.name ?? "",
+          actorName: claim.actor?.name ?? "",
+          activity: effectiveActivity,
+          result
+        });
+        // Nothing is given when this GM is no longer the active GM or the scene record was reloaded
+        // in the meantime: another GM's recovery may already have settled this roll.
+        if (!isReviewStillCurrent()) throw new Error("The loot review is no longer current.");
+        return reviewed;
+      } finally {
+        activeLootReviews.delete(reviewKey);
+        delete claim.entry.lootReviewPending;
+      }
+    }
+    : null;
+
+  const resolution = claimPersistence.then((persisted) => {
     if (!persisted) throw new Error("Active GM ownership changed before resolution.");
     return resolveSearchAsGm({
       actor: claim.actor,
@@ -902,7 +659,8 @@ function handlePlayerResolutionRequest(message) {
       extraModifier: claim.request.extraModifier,
       rollMode: claim.request.rollMode,
       containerId: claim.request.containerId,
-      resolutionId: message.sessionId
+      resolutionId: message.sessionId,
+      reviewLoot
     });
   }).then(async (summary) => {
     const persistedResult = buildPersistedResolutionResult(summary);
@@ -921,15 +679,20 @@ function handlePlayerResolutionRequest(message) {
     });
     return true;
   }).catch((error) => {
-    failSearchResolution(claim.entry, {
-      timestamp: getNowTimestamp(),
-      reason: "resolution-failed"
-    });
-    upsertSession(session);
+    // A stale scene record (another GM took over during a loot review) must not overwrite newer data.
+    if (!lootApproval || isReviewStillCurrent()) {
+      failSearchResolution(claim.entry, {
+        timestamp: getNowTimestamp(),
+        reason: "resolution-failed"
+      });
+      void upsertSession(session).catch(() => false);
+    }
     console.warn(`${MODULE_ID} | GM search resolution failed.`, error);
     rejectPlayerResolution(message, "resolution-failed");
     return false;
   });
+  // The review may take minutes; other players' requests must not wait for it in the queue.
+  return lootApproval ? Promise.resolve(true) : resolution;
 }
 
 function rememberProcessedPlayerRequest(requestId) {
@@ -939,26 +702,46 @@ function rememberProcessedPlayerRequest(requestId) {
   }
 }
 
-async function clearProcessedPlayerRequest(user, requestId) {
-  const currentRequest = user?.getFlag?.(MODULE_ID, PLAYER_REQUEST_FLAG);
-  if (String(currentRequest?.id ?? "") !== requestId) return;
-  await user.unsetFlag(MODULE_ID, PLAYER_REQUEST_FLAG);
+async function clearProcessedPlayerRequest(user, requestKey) {
+  const key = String(requestKey ?? "");
+  if (!key) return;
+  const stored = user?.getFlag?.(MODULE_ID, PLAYER_REQUESTS_FLAG);
+  if (!stored || typeof stored !== "object" || !(key in stored)) return;
+  await user.unsetFlag(MODULE_ID, `${PLAYER_REQUESTS_FLAG}.${key}`);
 }
 
-async function processAuthenticatedPlayerRequest(user, request) {
-  if (!isCurrentUserActiveGm()) return false;
+function rejectInvalidPlayerRequest(user, request) {
+  const sessionId = typeof request?.sessionId === "string" ? request.sessionId.trim() : "";
+  console.warn(`${MODULE_ID} | Rejected invalid player request.`, {
+    userId: user?.id,
+    requestId: request?.id,
+    sessionId
+  });
+  if (!sessionId || sessionId.length > 128) return;
+  emitGmSearchResolution({
+    sessionId,
+    targetUserId: user.id,
+    success: false,
+    reason: INVALID_PLAYER_REQUEST_REASON
+  });
+}
+
+async function processAuthenticatedPlayerRequest(user, { key, request, keyMismatch }) {
+  if (!isCurrentUserPrimaryGm()) return false;
   if (!user || user.isGM || user.active === false) return false;
-  if (!isValidPlayerDocumentRequest(request)) {
-    await clearProcessedPlayerRequest(user, String(request?.id ?? ""));
+  if (keyMismatch || !isValidPlayerDocumentRequest(request, { now: getServerNow() })) {
+    rejectInvalidPlayerRequest(user, request);
+    await clearProcessedPlayerRequest(user, key);
     return false;
   }
   const requestedGm = game.users?.get(String(request.gmUserId ?? ""));
   if (!requestedGm?.isGM) {
-    await clearProcessedPlayerRequest(user, request.id);
+    rejectInvalidPlayerRequest(user, request);
+    await clearProcessedPlayerRequest(user, key);
     return false;
   }
   if (processedPlayerRequestIds.has(request.id)) {
-    await clearProcessedPlayerRequest(user, request.id);
+    await clearProcessedPlayerRequest(user, key);
     return false;
   }
   rememberProcessedPlayerRequest(request.id);
@@ -983,36 +766,48 @@ async function processAuthenticatedPlayerRequest(user, request) {
 
     return false;
   } finally {
-    await clearProcessedPlayerRequest(user, request.id);
+    await clearProcessedPlayerRequest(user, key);
   }
 }
 
-function queueAuthenticatedPlayerRequest(user, request) {
-  const snapshot = foundry.utils.deepClone(request);
+function queueAuthenticatedPlayerRequest(user, storedRequest) {
+  const queueKey = `${user.id}:${storedRequest.key}`;
+  if (queuedPlayerRequestIds.has(queueKey)) return playerRequestQueue;
+  queuedPlayerRequestIds.add(queueKey);
+  const snapshot = foundry.utils.deepClone(storedRequest);
   playerRequestQueue = playerRequestQueue
     .catch(() => undefined)
     .then(() => processAuthenticatedPlayerRequest(user, snapshot))
     .catch((error) => {
       console.warn(`${MODULE_ID} | Authenticated player request failed.`, error);
       return false;
+    })
+    .finally(() => {
+      queuedPlayerRequestIds.delete(queueKey);
     });
   return playerRequestQueue;
 }
 
+// Queues every request the user has stored, oldest first, so a decision sent while the GM
+// was busy is always handled before the roll request that follows it.
+function queueStoredPlayerRequests(user) {
+  const storedRequests = listStoredPlayerRequests(user.getFlag(MODULE_ID, PLAYER_REQUESTS_FLAG));
+  for (const storedRequest of storedRequests) {
+    queueAuthenticatedPlayerRequest(user, storedRequest);
+  }
+}
+
 export function handlePlayerRequestDocumentUpdate(user, _changes, _options, userId) {
-  if (!isCurrentUserActiveGm()) return;
+  if (!isCurrentUserPrimaryGm()) return;
   if (!user || user.isGM || String(userId ?? "") !== String(user.id ?? "")) return;
-  const request = user.getFlag(MODULE_ID, PLAYER_REQUEST_FLAG);
-  if (!request) return;
-  queueAuthenticatedPlayerRequest(user, request);
+  queueStoredPlayerRequests(user);
 }
 
 export function processPendingPlayerRequests() {
-  if (!isCurrentUserActiveGm()) return Promise.resolve(false);
+  if (!isCurrentUserPrimaryGm()) return Promise.resolve(false);
   for (const user of game.users?.contents ?? []) {
     if (user.isGM) continue;
-    const request = user.getFlag(MODULE_ID, PLAYER_REQUEST_FLAG);
-    if (request) queueAuthenticatedPlayerRequest(user, request);
+    queueStoredPlayerRequests(user);
   }
   return playerRequestQueue;
 }
@@ -1062,25 +857,54 @@ async function waitForPlayerResult(pendingResult, {
   });
 }
 
+function clearPendingPlayerResult(sessionId) {
+  const pendingResult = pendingPlayerResults.get(sessionId);
+  if (pendingResult?.responseTimer != null) clearTimeout(pendingResult.responseTimer);
+  pendingPlayerResults.delete(sessionId);
+  return pendingResult;
+}
+
+function watchPendingPlayerResult(sessionId) {
+  const pendingResult = pendingPlayerResults.get(sessionId);
+  if (!pendingResult) return;
+  // The loot review notice already set the longer wait (1.34.0).
+  if (pendingResult.lootReviewNotified) return;
+  if (pendingResult.responseTimer != null) clearTimeout(pendingResult.responseTimer);
+  // The GM may still be busy with another scene, so the request stays pending:
+  // a late answer still opens the result. The player only learns that nothing came back yet.
+  pendingResult.responseTimer = setTimeout(() => {
+    const current = pendingPlayerResults.get(sessionId);
+    if (current !== pendingResult) return;
+    current.responseTimer = null;
+    ui.notifications.warn(t("WILDHARVEST.Notifications.ResolutionNoResponse"));
+  }, PLAYER_RESOLUTION_RESPONSE_TIMEOUT_MS);
+}
+
 async function handleGmResolution(message) {
   if (message.targetUserId !== game.user.id) return;
   const sessionId = String(message.sessionId ?? "").trim();
-  const pendingResult = pendingPlayerResults.get(sessionId);
 
   if (!message.success) {
-    pendingPlayerResults.delete(sessionId);
-    ui.notifications.error(t("WILDHARVEST.Notifications.ResolutionRejected"));
+    clearPendingPlayerResult(sessionId);
+    ui.notifications.error(t(message.reason === INVALID_PLAYER_REQUEST_REASON
+      ? "WILDHARVEST.Notifications.RequestRejectedInvalid"
+      : "WILDHARVEST.Notifications.ResolutionRejected"));
     return;
   }
 
   if (message.resultAvailable === false) {
-    pendingPlayerResults.delete(sessionId);
+    clearPendingPlayerResult(sessionId);
     ui.notifications.warn(t("WILDHARVEST.Notifications.PlayerResultUnavailable"));
     return;
   }
 
+  const pendingResult = pendingPlayerResults.get(sessionId);
+  if (pendingResult?.responseTimer != null) {
+    clearTimeout(pendingResult.responseTimer);
+    pendingResult.responseTimer = null;
+  }
   const resolvedResult = await waitForPlayerResult(pendingResult);
-  pendingPlayerResults.delete(sessionId);
+  if (pendingPlayerResults.get(sessionId) === pendingResult) pendingPlayerResults.delete(sessionId);
   if (!resolvedResult) {
     ui.notifications.warn(t("WILDHARVEST.Notifications.PlayerResultUnavailable"));
     return;
@@ -1094,17 +918,40 @@ async function handleGmResolution(message) {
   ui.notifications.info(t("WILDHARVEST.Notifications.PlayerResultReady"));
 }
 
+// 1.34.0: the roll is done and the GM is checking the loot; the "no answer yet" warning would be
+// misleading, so the player is told what is happening instead.
+function handleGmLootReview(message) {
+  if (message.targetUserId !== game.user.id) return;
+  const sessionId = String(message.sessionId ?? "").trim();
+  const pendingResult = pendingPlayerResults.get(sessionId);
+  if (!pendingResult) return;
+  if (pendingResult.responseTimer != null) clearTimeout(pendingResult.responseTimer);
+  // A longer wait: the GM decides at the table. If even that passes, the player is told as before.
+  pendingResult.responseTimer = setTimeout(() => {
+    if (pendingPlayerResults.get(sessionId) !== pendingResult) return;
+    pendingResult.responseTimer = null;
+    ui.notifications.warn(t("WILDHARVEST.Notifications.ResolutionNoResponse"));
+  }, PLAYER_LOOT_REVIEW_TIMEOUT_MS);
+  if (pendingResult.lootReviewNotified) return;
+  pendingResult.lootReviewNotified = true;
+  ui.notifications.info(t("WILDHARVEST.Notifications.LootAwaitingApproval"));
+}
+
 function handleSessionClosed(message) {
   const sessionId = String(message.sessionId ?? "").trim();
   if (!sessionId) return;
   if (message.targetUserId !== game.user.id) return;
 
   closedSessionIds.add(sessionId);
-  pendingPlayerResults.delete(sessionId);
+  clearPendingPlayerResult(sessionId);
 
   const offerDialog = playerOfferDialogs.get(sessionId);
   if (offerDialog?.element?.isConnected) {
     offerDialog.close();
+  }
+  const searchDialog = playerSearchDialogs.get(sessionId);
+  if (searchDialog?.element?.isConnected) {
+    searchDialog.close();
   }
 
   ui.notifications.info(t("WILDHARVEST.Notifications.SceneClosedByGM"));
@@ -1139,7 +986,7 @@ function openPlayerOfferDialog(offer) {
       const gmUserId = getCurrentActiveGmId();
       if (!gmUserId) {
         ui.notifications.warn(t("WILDHARVEST.Notifications.NoActiveGm"));
-        return;
+        return false;
       }
       const request = await submitPlayerDecisionRequest({
         type: PLAYER_REQUEST_TYPES.DECISION,
@@ -1149,14 +996,19 @@ function openPlayerOfferDialog(offer) {
       });
       if (!request) return false;
 
-      openSearchDialog({
+      const openSearch = playerSearchDialogs.get(offer.sessionId);
+      if (openSearch?.element?.isConnected) {
+        openSearch.bringToFront?.();
+        return true;
+      }
+
+      const searchDialog = openSearchDialog({
         title: t("WILDHARVEST.Dialog.Offer.SearchTitle", { activityName: activity.name }),
         locationId: location.id,
         activityId: activity.id,
         lootPoolId: offer.lootPoolId ?? "",
         skillId: offer.skillId ?? "",
         skillLabel: offer.skillLabel ?? "",
-        lockContext: true,
         actorId: game.user.character?.id ?? "",
         beforeSubmit: () => {
           if (isSessionClosedId(offer.sessionId)) {
@@ -1168,11 +1020,13 @@ function openPlayerOfferDialog(offer) {
           if (!activeGmId) {
             throw new Error(t("WILDHARVEST.Notifications.NoActiveGm"));
           }
+          clearPendingPlayerResult(offer.sessionId);
           pendingPlayerResults.set(offer.sessionId, {
             sessionId: offer.sessionId,
             actorId,
             activityName: activity.name,
-            dialogPosition
+            dialogPosition,
+            responseTimer: null
           });
           try {
             await submitPlayerDocumentRequest({
@@ -1185,17 +1039,30 @@ function openPlayerOfferDialog(offer) {
               rollMode
             });
           } catch (error) {
-            pendingPlayerResults.delete(offer.sessionId);
+            clearPendingPlayerResult(offer.sessionId);
             throw error;
           }
+          watchPendingPlayerResult(offer.sessionId);
+          // The GM may already have answered (or started the loot review) while the request was saved;
+          // the "roll sent" message would then come after the newer one.
+          const pending = pendingPlayerResults.get(offer.sessionId);
+          return { silent: !pending || Boolean(pending.lootReviewNotified) };
         }
       });
+      if (!searchDialog) return false;
+      playerSearchDialogs.set(offer.sessionId, searchDialog);
+      searchDialog.addEventListener("close", () => {
+        if (playerSearchDialogs.get(offer.sessionId) === searchDialog) {
+          playerSearchDialogs.delete(offer.sessionId);
+        }
+      }, { once: true });
+      return true;
     },
     onDecline: async () => {
       const gmUserId = getCurrentActiveGmId();
       if (!gmUserId) {
         ui.notifications.warn(t("WILDHARVEST.Notifications.NoActiveGm"));
-        return;
+        return false;
       }
       const request = await submitPlayerDecisionRequest({
         type: PLAYER_REQUEST_TYPES.DECISION,
@@ -1223,7 +1090,9 @@ function isAuthorizedSocketMessage(message) {
 }
 
 function handleSocketMessage(message) {
-  if (!message || message.senderId === game.user.id) return;
+  if (!message) return;
+  // Skip only this window's own messages; another window of the same user is a separate client (A9).
+  if (message.clientId ? message.clientId === getSocketClientId() : message.senderId === game.user.id) return;
   if (!isAuthorizedSocketMessage(message)) {
     console.warn("wildharvest | Rejected unauthorized socket message.", {
       type: message?.type,
@@ -1248,6 +1117,11 @@ function handleSocketMessage(message) {
     return;
   }
 
+  if (message.type === SOCKET_MESSAGE_TYPES.GM_LOOT_REVIEW) {
+    handleGmLootReview(message);
+    return;
+  }
+
   if (message.type === SOCKET_MESSAGE_TYPES.SESSION_CLOSED) {
     handleSessionClosed(message);
     return;
@@ -1255,6 +1129,11 @@ function handleSocketMessage(message) {
 
   if (message.type === SOCKET_MESSAGE_TYPES.SESSION_SYNC) {
     if (game.user?.isGM) initializeSearchSessions();
+    return;
+  }
+
+  if (message.type === SOCKET_MESSAGE_TYPES.GM_PRESENCE) {
+    handleGmPresence(message);
   }
 }
 
@@ -1262,145 +1141,6 @@ export function registerSocketListeners() {
   if (socketListenersRegistered) return;
   game.socket?.on(SOCKET_EVENT, handleSocketMessage);
   socketListenersRegistered = true;
-}
-
-export function openSearchResponsesDialog() {
-  if (!requireActiveGm()) return;
-
-  if (responsesDialog?.element?.isConnected) {
-    refreshResponsesDialog();
-    responsesDialog.bringToFront?.();
-    return;
-  }
-
-  responsesDialog = new DialogV2({
-    window: {
-      title: t("WILDHARVEST.Dialog.Responses.Title")
-    },
-    content: `
-      <div class="wildharvest-dialog wildharvest-dialog--wide">
-        <div data-search-sessions>${renderSessionsMarkup()}</div>
-      </div>
-    `,
-    buttons: [
-      {
-        action: "close",
-        label: t("WILDHARVEST.Dialog.Close"),
-        default: true
-      }
-    ],
-    rejectClose: false
-  });
-
-  responsesDialog.render({ force: true });
-}
-
-export function openGmOfferDialog() {
-  if (!requireActiveGm()) return;
-
-  const locations = getLocations();
-  if (!locations.length) {
-    ui.notifications.warn(t("WILDHARVEST.Notifications.NoLocations"));
-    return;
-  }
-
-  const players = getActivePlayers();
-  if (!players.length) {
-    ui.notifications.warn(t("WILDHARVEST.Notifications.NoPlayers"));
-    return;
-  }
-
-  const initialLocation = locations[0];
-  const initialActivity = initialLocation.activities[0];
-
-  const dialog = new DialogV2({
-    window: {
-      title: t("WILDHARVEST.Dialog.Offer.Title")
-    },
-    content: `
-      <div class="wildharvest-dialog wildharvest-dialog--wide">
-        <p>${escapeHtml(t("WILDHARVEST.Dialog.Offer.Description"))}</p>
-        <div class="form-group">
-          <label>${escapeHtml(t("WILDHARVEST.Dialog.Offer.Mode"))}</label>
-          <select name="assignmentMode">
-            <option value="${ASSIGNMENT_MODE.WHOLE_PARTY}">${escapeHtml(t("WILDHARVEST.Dialog.Offer.ModeParty"))}</option>
-            <option value="${ASSIGNMENT_MODE.PER_PLAYER}">${escapeHtml(t("WILDHARVEST.Dialog.Offer.ModePerPlayer"))}</option>
-          </select>
-        </div>
-
-        <section data-assignment-mode="whole-party">
-          <div class="form-group">
-            <label>${escapeHtml(t("WILDHARVEST.Dialog.Search.Activity"))}</label>
-            <select name="activityId">
-              ${renderActivityOptions(initialLocation, initialActivity.id)}
-            </select>
-          </div>
-          <div class="form-group">
-            <label>${escapeHtml(t("WILDHARVEST.Dialog.Offer.Skill"))}</label>
-            <select name="skillId">
-              ${renderSkillOptions("")}
-            </select>
-          </div>
-          <section class="wildharvest-preview" data-offer-preview>
-            ${renderOfferPreview(initialLocation, initialActivity, "")}
-          </section>
-        </section>
-
-        <section data-assignment-mode="per-player" hidden>
-          <p class="hint">${escapeHtml(t("WILDHARVEST.Dialog.Offer.PlayerDescription"))}</p>
-          <table class="wildharvest-table">
-            <thead>
-              <tr>
-                <th>${escapeHtml(t("WILDHARVEST.Dialog.Offer.SendTo"))}</th>
-                <th>${escapeHtml(t("WILDHARVEST.Dialog.Offer.Player"))}</th>
-                <th>${escapeHtml(t("WILDHARVEST.Dialog.Offer.Character"))}</th>
-                <th>${escapeHtml(t("WILDHARVEST.Dialog.Search.Activity"))}</th>
-                <th>${escapeHtml(t("WILDHARVEST.Dialog.Offer.Skill"))}</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${renderPerPlayerRows(players, locations)}
-            </tbody>
-          </table>
-        </section>
-      </div>
-    `,
-    buttons: [
-      {
-        action: "send",
-        label: t("WILDHARVEST.Dialog.Offer.Send"),
-        icon: "fa-solid fa-paper-plane",
-        default: true,
-        callback: async (_event, button, instance) => {
-          const form = getDialogForm(instance, button);
-          if (!form) {
-            ui.notifications.error(t("WILDHARVEST.Errors.OfferFormMissing"));
-            return;
-          }
-
-          const mode = String(form.elements.assignmentMode?.value ?? ASSIGNMENT_MODE.WHOLE_PARTY);
-          const offersByUserId = mode === ASSIGNMENT_MODE.PER_PLAYER
-            ? buildPerPlayerOffers(players, form, locations)
-            : buildWholePartyOffers(players, form, locations);
-
-          sendSearchOffers(offersByUserId, mode);
-        }
-      },
-      {
-        action: "responses",
-        label: t("WILDHARVEST.Controls.Responses"),
-        callback: async () => openSearchResponsesDialog()
-      },
-      {
-        action: "cancel",
-        label: t("WILDHARVEST.Dialog.Cancel")
-      }
-    ],
-    rejectClose: false
-  });
-
-  dialog.addEventListener("render", () => attachOfferListeners(dialog, locations), { once: true });
-  dialog.render({ force: true });
 }
 
 

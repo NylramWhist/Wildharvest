@@ -1,31 +1,22 @@
-import { escapeHtml } from "./dialog-utils.js";
-
-export const GM_UI_ASSETS = Object.freeze({
-  controlPanel: "modules/wildharvest/assets/ui/icons/icon-control-panel.svg",
-  launchScene: "modules/wildharvest/assets/ui/icons/icon-launch-scene.svg",
-  responses: "modules/wildharvest/assets/ui/icons/icon-responses.svg",
-  presets: "modules/wildharvest/assets/ui/icons/icon-presets.svg",
-  history: "modules/wildharvest/assets/ui/icons/icon-history.svg",
-  activity: "modules/wildharvest/assets/ui/icons/icon-activity.svg",
-  skill: "modules/wildharvest/assets/ui/icons/icon-skill.svg",
-  lootPool: "modules/wildharvest/assets/ui/icons/icon-loot-pool.svg",
-  sendTo: "modules/wildharvest/assets/ui/icons/icon-send-to.svg",
-  description: "modules/wildharvest/assets/ui/icons/icon-description.svg",
-  completed: "modules/wildharvest/assets/ui/icons/icon-completed.svg",
-  pending: "modules/wildharvest/assets/ui/icons/icon-pending.svg",
-  joined: "modules/wildharvest/assets/ui/icons/icon-joined.svg",
-  closed: "modules/wildharvest/assets/ui/icons/icon-closed.svg",
-  reminder: "modules/wildharvest/assets/ui/icons/icon-reminder.svg",
-  rewards: "modules/wildharvest/assets/ui/icons/icon-rewards.svg",
-  testRoll: "modules/wildharvest/assets/ui/icons/icon-test-roll.svg",
-  closeScene: "modules/wildharvest/assets/ui/icons/icon-close-scene.svg"
+// Font Awesome classes (bundled with Foundry) for the GM Workbench.
+export const GM_UI_ICONS = Object.freeze({
+  controlPanel: "fa-solid fa-sliders",
+  launchScene: "fa-solid fa-compass",
+  responses: "fa-solid fa-inbox",
+  presets: "fa-solid fa-layer-group",
+  history: "fa-solid fa-clock-rotate-left",
+  activity: "fa-solid fa-person-hiking",
+  skill: "fa-solid fa-graduation-cap",
+  lootPool: "fa-solid fa-box-open",
+  sendTo: "fa-solid fa-paper-plane",
+  description: "fa-solid fa-scroll",
+  completed: "fa-solid fa-circle-check",
+  pending: "fa-solid fa-hourglass-half",
+  joined: "fa-solid fa-user-check",
+  closed: "fa-solid fa-lock",
+  reminder: "fa-solid fa-bell",
+  rewards: "fa-solid fa-gem",
+  testRoll: "fa-solid fa-flask",
+  closeScene: "fa-solid fa-circle-xmark"
 });
 
-export function renderGmIcon(iconPath, className = "wildharvest-gm-icon", alt = "") {
-  if (!iconPath) return "";
-  return `<img class="${escapeHtml(className)}" src="${escapeHtml(iconPath)}" alt="${escapeHtml(alt)}">`;
-}
-
-export function renderGmLabel(iconPath, label) {
-  return `${renderGmIcon(iconPath, "wildharvest-gm-label__asset")}<span>${escapeHtml(label)}</span>`;
-}

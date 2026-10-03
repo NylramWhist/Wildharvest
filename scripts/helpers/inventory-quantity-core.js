@@ -13,12 +13,3 @@ export function calculateGrantedQuantity(systemQuantity, rewardQuantity) {
 
   return normalizeSystemQuantity(systemQuantity) + quantityToAdd;
 }
-
-export function getInventoryDisplayQuantity({
-  systemQuantity,
-  hasQuantityPath
-}) {
-  return hasQuantityPath
-    ? normalizeSystemQuantity(systemQuantity)
-    : 1;
-}

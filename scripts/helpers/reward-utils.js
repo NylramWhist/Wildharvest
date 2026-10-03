@@ -1,7 +1,9 @@
 import { t } from "../i18n.js";
-import {
-  getRewardPackLabel
-} from "../settings.js";
+
+function getRewardPackLabel(packId) {
+  const pack = globalThis.game?.packs?.get?.(packId);
+  return String(pack?.title ?? pack?.metadata?.label ?? packId ?? "").trim();
+}
 
 export function getRewardDisplayName(reward) {
   const explicitName = String(reward?.name ?? "").trim();
@@ -32,16 +34,4 @@ export function getRewardDisplayName(reward) {
 
 export function getRewardStackText(reward) {
   return `${getRewardDisplayName(reward)} x${String(reward?.quantity ?? 1)}`;
-}
-
-export function getRewardPreviewText(reward) {
-  if (reward?.pack && !reward?.documentId && !reward?.uuid) {
-    return t("WILDHARVEST.Reward.RandomPreview", {
-      pack: getRewardPackLabel(reward.pack),
-      quantity: String(reward.quantity ?? 1),
-      draws: String(reward.draws ?? 1)
-    });
-  }
-
-  return `${getRewardDisplayName(reward)} (${String(reward?.quantity ?? 1)})`;
 }

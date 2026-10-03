@@ -11,16 +11,16 @@
   <section class="wildharvest-preview__block">
     <strong>{{labels.playerRollTitle}}</strong>
     <p class="hint">{{labels.playerRollHint}}</p>
-    <label class="checkbox">
-      <input type="checkbox" name="playerRollRules.allowExtraModifier" {{#if playerRollRules.allowExtraModifier}}checked{{/if}}>
+    <label class="wildharvest-rules-check">
+      <input type="checkbox" class="wh-check" name="playerRollRules.allowExtraModifier" {{#if playerRollRules.allowExtraModifier}}checked{{/if}}>
       <span>{{labels.allowExtraModifier}}</span>
     </label>
-    <label>
+    <label class="wildharvest-rules-field">
       <span>{{labels.maxExtraModifier}}</span>
       <input type="number" name="playerRollRules.maxExtraModifier" value="{{playerRollRules.maxExtraModifier}}" step="1" min="0" max="100">
     </label>
-    <label class="checkbox">
-      <input type="checkbox" name="playerRollRules.allowRollModeSelection" {{#if playerRollRules.allowRollModeSelection}}checked{{/if}}>
+    <label class="wildharvest-rules-check">
+      <input type="checkbox" class="wh-check" name="playerRollRules.allowRollModeSelection" {{#if playerRollRules.allowRollModeSelection}}checked{{/if}}>
       <span>{{labels.allowRollModeSelection}}</span>
     </label>
   </section>
@@ -33,9 +33,10 @@
         <tr>
           <th scope="col">{{labels.minTotal}}</th>
           <th scope="col">{{labels.lootPoints}}</th>
+          <th scope="col" class="wildharvest-rules-table__actions">{{labels.rowActions}}</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody data-rule-rows="lootPointBrackets">
         {{#each lootPointBrackets}}
         <tr>
           <td data-label="{{../labels.minTotal}}">
@@ -44,10 +45,19 @@
           <td data-label="{{../labels.lootPoints}}">
             <input type="number" name="lootPointBrackets.{{index}}.lootPoints" value="{{lootPoints}}" step="1" min="0" aria-label="{{../labels.lootPoints}}">
           </td>
+          <td class="wildharvest-rules-table__actions" data-label="{{../labels.rowActions}}">
+            <button type="button" data-action="removeRuleRow" aria-label="{{../labels.removeRow}}" data-tooltip="{{../labels.removeRow}}">
+              <i class="fa-solid fa-trash" aria-hidden="true"></i>
+            </button>
+          </td>
         </tr>
         {{/each}}
       </tbody>
     </table>
+    <button type="button" class="wildharvest-rules-add-row" data-action="addRuleRow" data-rule-rows="lootPointBrackets">
+      <i class="fa-solid fa-plus" aria-hidden="true"></i>
+      {{labels.addRow}}
+    </button>
   </section>
 
   <section class="wildharvest-preview__block">
@@ -67,7 +77,7 @@
         <tr>
           <td class="wildharvest-rules-table__name" data-label="{{../labels.name}}">{{label}}</td>
           <td data-label="{{../labels.cost}}">
-            <input type="number" name="rarityRules.{{id}}.cost" value="{{cost}}" step="1" min="0" aria-label="{{../labels.cost}}: {{label}}">
+            <input type="number" name="rarityRules.{{id}}.cost" value="{{cost}}" step="1" min="1" aria-label="{{../labels.cost}}: {{label}}">
           </td>
           <td data-label="{{../labels.weight}}">
             <input type="number" name="rarityRules.{{id}}.weight" value="{{weight}}" step="1" min="0" aria-label="{{../labels.weight}}: {{label}}">
@@ -84,26 +94,46 @@
   <section class="wildharvest-preview__block">
     <strong>{{labels.valueTitle}}</strong>
     <p class="hint">{{labels.valueHint}}</p>
-    <label>
+    <label class="wildharvest-rules-field">
       <span>{{labels.tolerancePercent}}</span>
       <input type="number" name="valueRules.tolerancePercent" value="{{tolerancePercent}}" step="0.1" min="0" max="100">
     </label>
+    <label class="wildharvest-rules-field">
+      <span>{{labels.maxDistinctItems}}</span>
+      <input type="number" name="valueRules.maxDistinctItems" value="{{maxDistinctItems}}" step="1" min="1" max="{{maxDistinctItemsLimit}}" aria-describedby="wildharvest-rules-distinct-hint">
+    </label>
+    <p class="hint" id="wildharvest-rules-distinct-hint">{{labels.maxDistinctItemsHint}}</p>
+    <label class="wildharvest-rules-field">
+      <span>{{labels.maxTotalItems}}</span>
+      <input type="number" name="valueRules.maxTotalItems" value="{{maxTotalItems}}" step="1" min="{{maxTotalItemsMin}}" max="{{maxTotalItemsMax}}" aria-describedby="wildharvest-rules-total-items-hint">
+    </label>
+    <p class="hint" id="wildharvest-rules-total-items-hint">{{labels.maxTotalItemsHint}}</p>
     <table class="wildharvest-table wildharvest-rules-table">
       <thead>
         <tr>
           <th scope="col">{{labels.valueLootPoints}}</th>
           <th scope="col">{{labels.targetGp}}</th>
+          <th scope="col" class="wildharvest-rules-table__actions">{{labels.rowActions}}</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody data-rule-rows="valueBrackets">
         {{#each valueRules}}
         <tr>
           <td data-label="{{../labels.valueLootPoints}}"><input type="number" name="valueRules.brackets.{{index}}.lootPoints" value="{{lootPoints}}" step="1" min="0" aria-label="{{../labels.valueLootPoints}}"></td>
           <td data-label="{{../labels.targetGp}}"><input type="number" name="valueRules.brackets.{{index}}.targetGp" value="{{targetGp}}" step="0.01" min="0" aria-label="{{../labels.targetGp}}"></td>
+          <td class="wildharvest-rules-table__actions" data-label="{{../labels.rowActions}}">
+            <button type="button" data-action="removeRuleRow" aria-label="{{../labels.removeRow}}" data-tooltip="{{../labels.removeRow}}">
+              <i class="fa-solid fa-trash" aria-hidden="true"></i>
+            </button>
+          </td>
         </tr>
         {{/each}}
       </tbody>
     </table>
+    <button type="button" class="wildharvest-rules-add-row" data-action="addRuleRow" data-rule-rows="valueBrackets">
+      <i class="fa-solid fa-plus" aria-hidden="true"></i>
+      {{labels.addRow}}
+    </button>
   </section>
 
   <footer class="sheet-footer flexrow">

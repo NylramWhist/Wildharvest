@@ -1,0 +1,188 @@
+/*
+ * Wildharvest design tokens (1.28.0, decision D16: Foundry theme + module accent).
+ *
+ * Text, borders and the window background come from the Foundry theme (--color-text-*, the
+ * application background), so the module follows the light and dark application themes.
+ * Surfaces are tints of the theme text colour, which works on the dark background and on the
+ * parchment alike. The module keeps one gold accent, darker in the light theme for contrast.
+ * Documented in the project doc claude/wildharvest-design-tokens.md.
+ */
+
+.wildharvest-window {
+  /* Text (Foundry theme) */
+  --wh-text: var(--color-text-primary, #efe6d8);
+  --wh-text-muted: var(--color-text-secondary, #e7d1b1);
+  /* Foundry's subtle text, lifted towards the main text: 4.5:1 on active (tinted) rows. */
+  --wh-text-subtle: color-mix(in srgb, var(--color-text-subtle, #9f8475) 55%, var(--wh-text));
+  --wh-text-emphatic: var(--color-text-emphatic, #f7f3e8);
+
+  /* Surfaces: tints over the Foundry application background */
+  --wh-window-bg: transparent;
+  --wh-surface-0: color-mix(in srgb, var(--wh-text) 3%, transparent);
+  --wh-surface-1: color-mix(in srgb, var(--wh-text) 6%, transparent);
+  --wh-surface-2: color-mix(in srgb, var(--wh-text) 10%, transparent);
+  --wh-surface-3: color-mix(in srgb, var(--wh-text) 15%, transparent);
+  --wh-input-bg: color-mix(in srgb, var(--wh-text) 7%, transparent);
+
+  /* Borders */
+  --wh-border: color-mix(in srgb, var(--wh-text) 24%, transparent);
+  --wh-border-soft: color-mix(in srgb, var(--wh-text) 13%, transparent);
+  --wh-border-strong: color-mix(in srgb, var(--wh-accent) 65%, transparent);
+
+  /* Module accent (dark theme values; the light theme overrides them below) */
+  --wh-accent: #d9a84e;
+  --wh-accent-bright: #f0c879;
+  --wh-accent-contrast: #1a1206;
+  --wh-accent-fill: color-mix(in srgb, var(--wh-accent) 35%, transparent); /* default button tint */
+
+  /* States */
+  --wh-success: #8fbf5a;
+  --wh-warning: #e0a84a;
+  --wh-danger: #e06a55;
+  --wh-info: #6fa8dc;
+
+  /* Effects */
+  --wh-shadow-color: #000;
+  --wh-text-shadow-color: #000;
+  --wh-focus-ring: var(--wh-accent-bright);
+
+  /* Icon sizes (1.37.2): glyph size of the shared .wh-icon component, see styles/icons.css */
+  --wh-icon-size-sm: 0.875rem;
+  --wh-icon-size-md: 1rem;
+  --wh-icon-size-lg: 1.45rem;
+  --wh-icon-size-xl: 2rem;
+
+  /* Empty states (1.38.1): one dashed card for every "nothing here yet" note */
+  --wh-empty-border: 1px dashed color-mix(in srgb, var(--wh-accent) 20%, transparent);
+  --wh-empty-bg: radial-gradient(circle at center, color-mix(in srgb, var(--wh-accent) 5%, transparent), transparent 42%), var(--wh-surface-0);
+}
+
+/*
+ * Scales (1.38.0): radius, spacing and typography. They sit on :root, not on .wildharvest-window,
+ * because some module markup (the chat result card, shared dialog primitives) lives outside the
+ * module windows. Every size, gap, padding, radius, line height, weight and font stack in the
+ * stylesheets comes from here.
+ */
+:root {
+  /* Shape (1.38.0): three radii. sm = controls, chips, boxes; md = tiles and inner cards; lg = outer cards and panels. */
+  --wh-radius-sm: 4px;
+  --wh-radius-md: 8px;
+  --wh-radius-lg: 12px;
+  --wh-radius-pill: 999px;
+
+  /* Spacing (1.38.0): gap, padding and margin come from this scale (rem, follows the Foundry font size). */
+  --wh-space-0: 0.125rem;
+  --wh-space-1: 0.25rem;
+  --wh-space-2: 0.5rem;
+  --wh-space-3: 0.75rem;
+  --wh-space-4: 1rem;
+
+  /* Typography (1.38.0): sizes, line heights, weights and the three font stacks of the module. */
+  --wh-fs-xs: 0.75rem;
+  --wh-fs-sm: 0.875rem;
+  --wh-fs-md: 1rem;
+  --wh-fs-lg: 1.125rem;
+  --wh-fs-xl: 1.25rem;
+  --wh-fs-2xl: 1.5rem;
+  --wh-fs-3xl: 2rem;
+  --wh-fs-4xl: 3rem;
+  --wh-lh-none: 1;
+  --wh-lh-tight: 1.2;
+  --wh-lh-normal: 1.4;
+  --wh-lh-relaxed: 1.5;
+  --wh-fw-regular: 400;
+  --wh-fw-semibold: 600;
+  --wh-fw-bold: 700;
+  --wh-fw-heavy: 800;
+  --wh-font-heading: Georgia, "Times New Roman", serif;
+  --wh-font-ui: Signika, Roboto, Arial, sans-serif;
+  --wh-font-mono: "Cascadia Code", "Fira Code", monospace;
+
+  /* Motion (1.38.1): durations and easing of every transition and animation. */
+  --wh-motion-fast: 120ms;
+  --wh-motion-base: 180ms;
+  --wh-motion-slow: 220ms;
+  --wh-ease: ease;
+  --wh-ease-out: ease-out;
+}
+
+/* Light application theme: Foundry puts theme-light on the body (or on a themed application). */
+body.theme-light .wildharvest-window:not(.theme-dark),
+.wildharvest-window.theme-light {
+  /* Dark enough for 4.5:1 on the parchment under up to three stacked surface tints. */
+  --wh-accent: #5c3a06;
+  --wh-accent-bright: #56360a;
+  --wh-accent-contrast: #fffaf0;
+  --wh-accent-fill: color-mix(in srgb, var(--wh-accent) 16%, transparent);
+  /* Foundry's light subtle text (#555) is too light on the tinted rows (active entries). */
+  --wh-text-subtle: #444;
+  --wh-success: #25490c;
+  --wh-warning: #5c3a06;
+  --wh-danger: #86190f;
+  --wh-info: #143f68;
+  --wh-shadow-color: rgb(40 30 20 / 45%);
+  --wh-text-shadow-color: transparent;
+  --wh-surface-0: color-mix(in srgb, var(--wh-text) 4%, transparent);
+  --wh-surface-1: color-mix(in srgb, var(--wh-text) 7%, transparent);
+  --wh-border: color-mix(in srgb, var(--wh-text) 30%, transparent);
+}
+
+/* High contrast (operating system setting): stronger borders and no dimmed text. */
+@media (prefers-contrast: more) {
+  .wildharvest-window,
+  body.theme-light .wildharvest-window:not(.theme-dark),
+  .wildharvest-window.theme-light {
+    --wh-text-muted: var(--wh-text);
+    --wh-text-subtle: var(--wh-text);
+    --wh-border: color-mix(in srgb, var(--wh-text) 60%, transparent);
+    --wh-border-soft: color-mix(in srgb, var(--wh-text) 40%, transparent);
+    --wh-border-strong: var(--wh-accent);
+  }
+}
+
+/* Names used by the GM stylesheets before 1.28.0, kept as aliases of the tokens above. */
+.wildharvest-window--gm {
+  --wildharvest-gm-bg-deep: var(--wh-window-bg);
+  --wildharvest-gm-bg-window: var(--wh-window-bg);
+  --wildharvest-gm-bg-panel: var(--wh-surface-1);
+  --wildharvest-gm-bg-panel-alt: var(--wh-surface-2);
+  --wildharvest-gm-bg-hover: var(--wh-surface-3);
+  --wildharvest-gm-bg-input: var(--wh-input-bg);
+  --wildharvest-gm-border-dark: var(--wh-border-soft);
+  --wildharvest-gm-border: var(--wh-border);
+  --wildharvest-gm-border-soft: var(--wh-border-soft);
+  --wildharvest-gm-border-bright: var(--wh-border-strong);
+  --wildharvest-gm-accent: var(--wh-accent);
+  --wildharvest-gm-accent-bright: var(--wh-accent-bright);
+  --wildharvest-gm-accent-muted: color-mix(in srgb, var(--wh-accent) 70%, var(--wh-text-subtle));
+  --wildharvest-gm-text: var(--wh-text);
+  --wildharvest-gm-text-muted: var(--wh-text-muted);
+  --wildharvest-gm-text-dim: var(--wh-text-subtle);
+  --wildharvest-gm-text-dark: var(--wh-accent-contrast);
+  --wildharvest-gm-success: var(--wh-success);
+  --wildharvest-gm-warning: var(--wh-warning);
+  --wildharvest-gm-danger: var(--wh-danger);
+  --wildharvest-gm-radius-sm: var(--wh-radius-sm);
+  --wildharvest-gm-radius-md: var(--wh-radius-sm);
+  --wildharvest-gm-radius-lg: var(--wh-radius-sm);
+  --wildharvest-gm-shadow-panel: 0 6px 18px color-mix(in srgb, var(--wh-shadow-color) 35%, transparent);
+  --wildharvest-gm-glow: 0 0 8px color-mix(in srgb, var(--wh-accent) 12%, transparent);
+}
+
+/* Names used by the player stylesheet before 1.29.0, kept as aliases (one accent for the whole module). */
+.wildharvest-window {
+  --wildharvest-player-border: var(--wh-border);
+  --wildharvest-player-border-strong: var(--wh-border-strong);
+  --wildharvest-player-bg: var(--wh-surface-1);
+  --wildharvest-player-bg-soft: var(--wh-surface-2);
+  --wildharvest-player-accent: var(--wh-accent);
+  --wildharvest-player-accent-soft: color-mix(in srgb, var(--wh-accent) 15%, transparent);
+  --wildharvest-player-text: var(--wh-text);
+  --wildharvest-player-text-soft: var(--wh-text-muted);
+  --wildharvest-player-success: var(--wh-success);
+  --wildharvest-player-warning: var(--wh-warning);
+  --wildharvest-player-muted: var(--wh-text-subtle);
+  --wildharvest-player-shadow: 0 6px 18px color-mix(in srgb, var(--wh-shadow-color) 30%, transparent);
+  --wildharvest-player-ambient-a: color-mix(in srgb, var(--wh-accent) 8%, transparent);
+  --wildharvest-player-ambient-b: color-mix(in srgb, var(--wh-success) 6%, transparent);
+}

@@ -1,0 +1,66 @@
+<div class="wildharvest-dialog wildharvest-player-layout wildharvest-player-layout--roll" data-player-lock-context="true">
+  <header class="wildharvest-player-head">
+    <i class="{{hero.icon}} wh-icon wh-icon--lg wildharvest-player-head__icon" aria-hidden="true"></i>
+    <div class="wildharvest-player-head__copy">
+      <h2>{{hero.title}}</h2>
+      <p class="wildharvest-player-head__check" data-search-hero-subtitle>{{hero.subtitle}}</p>
+    </div>
+  </header>
+  <section class="wildharvest-player-card wildharvest-player-fields" aria-label="{{labels.actor}}">
+    <div class="form-group wildharvest-player-field">
+      {{#if singleActor}}
+      <span class="wildharvest-player-field__label">{{labels.actor}}</span>
+      <input type="hidden" name="actorId" value="{{singleActor.id}}">
+      <p class="wildharvest-player-field__value">{{singleActor.name}}</p>
+      {{else}}
+      <label>{{labels.actor}}</label>
+      <select name="actorId">
+        {{#if allowNoActor}}<option value="">{{labels.noCharacterSave}}</option>{{/if}}
+        {{#each actors}}<option value="{{id}}"{{#if selected}} selected{{/if}}>{{name}}</option>
+        {{/each}}
+      </select>
+      {{/if}}
+    </div>
+    <div class="form-group wildharvest-player-field" data-loot-destination{{#unless hasContainers}} hidden{{/unless}}>
+      <label>{{labels.lootDestination}}</label>
+      <select name="containerId">
+        {{> wildharvest.containerOptions containerOptions}}
+      </select>
+      <p class="notes">{{labels.lootDestinationHint}}</p>
+    </div>
+  </section>
+  <input type="hidden" name="locationId" value="{{context.locationId}}">
+  <input type="hidden" name="activityId" value="{{context.activityId}}">
+  <input type="hidden" name="skillId" value="{{context.skillId}}">
+  <input type="hidden" name="skillName" value="{{context.skillName}}">
+  <section class="wildharvest-player-card wildharvest-player-fields wildharvest-player-fields--roll" aria-label="{{rollTitle.title}}">
+    <div class="wildharvest-player-field wildharvest-player-field--base">
+      <span class="wildharvest-player-field__label">{{labels.baseModifier}}</span>
+      <strong class="wildharvest-player-field__value" data-base-modifier>{{baseModifierText}}</strong>
+    </div>
+    <input type="hidden" name="baseSkillModifier" value="{{baseModifier}}">
+    {{#if policy.allowExtraModifier}}
+    <div class="form-group wildharvest-player-field">
+      <label>{{labels.extraModifier}}</label>
+      <input type="number" name="extraModifier" step="1" min="-{{policy.maxExtraModifier}}" max="{{policy.maxExtraModifier}}" value="0">
+      <p class="notes">{{labels.extraModifierLimit}}</p>
+    </div>
+    {{else}}
+    <input type="hidden" name="extraModifier" value="0">
+    {{/if}}
+    {{#if policy.allowRollModeSelection}}
+    <div class="form-group wildharvest-player-field">
+      <label>{{labels.rollMode}}</label>
+      <select name="rollMode">
+        {{#each rollModes}}<option value="{{value}}"{{#if selected}} selected{{/if}}>{{label}}</option>
+        {{/each}}
+      </select>
+    </div>
+    {{else}}
+    <input type="hidden" name="rollMode" value="normal">
+    {{/if}}
+    {{#unless policy.allowExtraModifier}}<p class="notes wildharvest-player-fields__note">{{labels.extraModifierLocked}}</p>{{/unless}}
+    {{#unless policy.allowRollModeSelection}}<p class="notes wildharvest-player-fields__note">{{labels.rollModeLocked}}</p>{{/unless}}
+  </section>
+  <p class="wildharvest-player-calculation-status" data-search-calculation-status role="status" aria-live="polite" hidden></p>
+</div>

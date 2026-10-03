@@ -1,0 +1,108 @@
+<section id="wildharvest-gm-tabpanel-{{tabId}}" class="wildharvest-gm-panel__body wildharvest-gm-panel__body--launch" role="tabpanel" aria-labelledby="wildharvest-gm-tab-{{tabId}}" tabindex="0"{{#unless active}} hidden{{/unless}}>
+  {{#if active}}
+  {{#if preset}}
+  {{> wildharvest.gmSceneBar sceneBar}}
+  <article class="wildharvest-gm-card wildharvest-gm-card--primary wildharvest-gm-launch-card">
+    <div class="wildharvest-gm-card__header">
+      <div>
+        <h3>{{localize "WILDHARVEST.Dialog.ControlPanel.LaunchTitle"}}</h3>
+        <p>{{localize "WILDHARVEST.Dialog.ControlPanel.LaunchHint"}}</p>
+      </div>
+    </div>
+    <div class="wildharvest-gm-launch-form-shell">
+      <div class="wildharvest-gm-form wildharvest-gm-form--launch">
+        <div class="form-group wildharvest-gm-form-group--half">
+          <label><i class="{{icons.activity}} wildharvest-gm-label__asset" aria-hidden="true"></i><span>{{localize "WILDHARVEST.Dialog.ControlPanel.Activity"}}</span></label>
+          <select name="gmPresetId">
+            {{#each presetOptions}}<option value="{{id}}"{{#if selected}} selected{{/if}}>{{name}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="form-group wildharvest-gm-form-group--half">
+          <label><i class="{{icons.skill}} wildharvest-gm-label__asset" aria-hidden="true"></i><span>{{localize "WILDHARVEST.Dialog.ControlPanel.Skill"}}</span></label>
+          <select name="gmSkillOverride">
+            <option value=""{{#unless skillOverride}} selected{{/unless}}>{{skillDefaultLabel}}</option>
+            {{#each skillOptions}}<option value="{{id}}"{{#if selected}} selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="form-group wildharvest-gm-form-group--half">
+          <label><i class="{{icons.lootPool}} wildharvest-gm-label__asset" aria-hidden="true"></i><span>{{localize "WILDHARVEST.Dialog.ControlPanel.LootPool"}}</span></label>
+          <div class="wildharvest-gm-readonly wildharvest-gm-readonly--scroll" title="{{compendiumSummary}}">{{compendiumSummary}}</div>
+        </div>
+        <div class="form-group wildharvest-gm-form-group--half">
+          <label><i class="{{icons.sendTo}} wildharvest-gm-label__asset" aria-hidden="true"></i><span>{{localize "WILDHARVEST.Dialog.ControlPanel.SendTo"}}</span></label>
+          <select name="gmSendMode">
+            {{#each sendModeOptions}}<option value="{{id}}"{{#if selected}} selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </div>
+        <div class="form-group wildharvest-gm-form-group--full">
+          <label><i class="{{icons.sendTo}} wildharvest-gm-label__asset" aria-hidden="true"></i><span>{{localize "WILDHARVEST.Dialog.ControlPanel.Recipients"}}</span></label>
+          {{#unless recipients.length}}
+          <p class="wildharvest-gm-recipients-empty">{{localize "WILDHARVEST.Dialog.ControlPanel.RecipientsNone"}}</p>
+          {{else if showRecipientChoice}}
+          <div class="wildharvest-gm-recipient-list">
+            {{#each recipients}}
+            <label class="wildharvest-gm-recipient">
+              <input type="checkbox" class="wh-check" data-recipient-id="{{id}}"{{#if checked}} checked{{/if}}>
+              <span>
+                <strong>{{name}}</strong>
+                <small>{{characterName}}</small>
+              </span>
+            </label>
+            {{/each}}
+          </div>
+          {{else}}
+          <ul class="wildharvest-gm-recipient-chips" aria-describedby="wildharvest-gm-recipients-hint">
+            {{#each recipients}}
+            <li class="wildharvest-gm-recipient-chip"><strong>{{name}}</strong> <small>{{characterName}}</small></li>
+            {{/each}}
+          </ul>
+          <p id="wildharvest-gm-recipients-hint" class="wildharvest-gm-recipients-hint">{{localize "WILDHARVEST.Dialog.ControlPanel.RecipientsWholePartyHint"}}</p>
+          {{/unless}}
+        </div>
+        <div class="form-group wildharvest-gm-form-group--full">
+          <label><i class="{{icons.description}} wildharvest-gm-label__asset" aria-hidden="true"></i><span>{{localize "WILDHARVEST.Dialog.ControlPanel.SceneDescription"}}</span></label>
+          <div class="wildharvest-gm-readonly wildharvest-gm-readonly--multiline">{{description}}</div>
+        </div>
+      </div>
+      {{#if validationMessages.length}}
+      <div class="notification warning wildharvest-gm-validation">
+        <p><strong>{{localize "WILDHARVEST.Dialog.ControlPanel.PresetNeedsAttention"}}</strong></p>
+        <ul class="wildharvest-history">
+          {{#each validationMessages}}<li>{{this}}</li>
+          {{/each}}
+        </ul>
+      </div>
+      {{/if}}
+      <div class="wildharvest-gm-launch-actions">
+        <button type="button" class="button default" data-action="gm-send-launch"{{#unless ready}} disabled{{/unless}}>
+          <i class="{{icons.sendTo}} wildharvest-gm-button__asset" aria-hidden="true"></i>
+          <span>{{localize "WILDHARVEST.Dialog.ControlPanel.SendPlayers"}}</span>
+        </button>
+        <div class="wildharvest-gm-launch-secondary-actions">
+          <button type="button" class="button" data-action="gm-test-roll"{{#unless ready}} disabled{{/unless}}>
+            <i class="{{icons.testRoll}} wildharvest-gm-button__asset" aria-hidden="true"></i>
+            <span>{{localize "WILDHARVEST.Dialog.ControlPanel.TestRoll"}}</span>
+          </button>
+          <button type="button" class="button" data-action="gm-preview-rewards"{{#unless ready}} disabled{{/unless}}>
+            <i class="{{icons.rewards}} wildharvest-gm-button__asset" aria-hidden="true"></i>
+            <span>{{localize "WILDHARVEST.Dialog.ControlPanel.PreviewRewards"}}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </article>
+  {{else}}
+  <section class="wildharvest-gm-empty-state">
+    <h3>{{localize "WILDHARVEST.Dialog.ControlPanel.NoPresetsTitle"}}</h3>
+    <p>{{localize "WILDHARVEST.Dialog.ControlPanel.NoPresetsDescription"}}</p>
+    <div class="wildharvest-inline-actions">
+      <button type="button" class="button" data-action="gm-open-presets">{{localize "WILDHARVEST.Dialog.ControlPanel.OpenPresets"}}</button>
+      <button type="button" class="button" data-action="gm-create-preset">{{localize "WILDHARVEST.Dialog.ControlPanel.CreatePreset"}}</button>
+    </div>
+  </section>
+  {{/if}}
+  {{/if}}
+</section>

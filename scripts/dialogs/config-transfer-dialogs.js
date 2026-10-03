@@ -1,25 +1,27 @@
 import { notifyError } from "../helpers/notification-utils.js";
+import { renderModuleTemplate } from "../helpers/templates.js";
 import { t } from "../i18n.js";
 import {
   bringDialogToFront,
-  escapeHtml,
   focusDialogControl,
   getDialogForm
 } from "./dialog-utils.js";
 
 const DialogV2 = foundry.applications.api.DialogV2;
+const GM_DIALOG_CLASSES = ["wildharvest-window", "wildharvest-window--gm", "wildharvest-window--gm-dialog"];
 
 export function openConfigExportDialog(parentDialog, exportText) {
   const dialog = new DialogV2({
+    // 1.28.0: GM dialogs use the module tokens (styles/tokens.css).
+    classes: GM_DIALOG_CLASSES,
     window: {
       title: t("WILDHARVEST.Dialog.ControlPanel.ExportConfigTitle")
     },
-    content: `
-      <div class="wildharvest-dialog wildharvest-dialog--wide">
-        <p>${escapeHtml(t("WILDHARVEST.Dialog.ControlPanel.ExportConfigHint"))}</p>
-        <textarea class="wildharvest-code" readonly spellcheck="false" aria-label="${escapeHtml(t("WILDHARVEST.Dialog.ControlPanel.ExportConfig"))}">${escapeHtml(exportText)}</textarea>
-      </div>
-    `,
+    content: renderModuleTemplate("wildharvest.configExport", {
+      hint: t("WILDHARVEST.Dialog.ControlPanel.ExportConfigHint"),
+      label: t("WILDHARVEST.Dialog.ControlPanel.ExportConfig"),
+      text: exportText
+    }),
     buttons: [
       {
         action: "close",
@@ -40,14 +42,14 @@ export function openConfigExportDialog(parentDialog, exportText) {
 
 function openConfigImportConfirmDialog(parentDialog, importDialog, rawText, onImport) {
   const dialog = new DialogV2({
+    // 1.28.0: GM dialogs use the module tokens (styles/tokens.css).
+    classes: GM_DIALOG_CLASSES,
     window: {
       title: t("WILDHARVEST.Dialog.ControlPanel.ImportConfigConfirmTitle")
     },
-    content: `
-      <div class="wildharvest-dialog">
-        <p>${escapeHtml(t("WILDHARVEST.Dialog.ControlPanel.ImportConfigConfirmPrompt"))}</p>
-      </div>
-    `,
+    content: renderModuleTemplate("wildharvest.confirm", {
+      prompt: t("WILDHARVEST.Dialog.ControlPanel.ImportConfigConfirmPrompt")
+    }),
     buttons: [
       {
         action: "confirm",
@@ -85,15 +87,20 @@ export function openConfigImportDialog(parentDialog, { onImport }) {
   }
 
   const dialog = new DialogV2({
+
+    // 1.28.0: GM dialogs use the module tokens (styles/tokens.css).
+
+    classes: GM_DIALOG_CLASSES,
     window: {
       title: t("WILDHARVEST.Dialog.ControlPanel.ImportConfigTitle")
     },
-    content: `
-      <div class="wildharvest-dialog wildharvest-dialog--wide">
-        <p>${escapeHtml(t("WILDHARVEST.Dialog.ControlPanel.ImportConfigHint"))}</p>
-        <textarea class="wildharvest-code" name="importConfigJson" spellcheck="false" aria-label="${escapeHtml(t("WILDHARVEST.Dialog.ControlPanel.ImportConfig"))}" placeholder="${escapeHtml(t("WILDHARVEST.Dialog.ControlPanel.ImportConfigPlaceholder"))}"></textarea>
-      </div>
-    `,
+    // The import window stays open until the confirmed import succeeds, so pasted JSON is kept.
+    form: { closeOnSubmit: false },
+    content: renderModuleTemplate("wildharvest.configImport", {
+      hint: t("WILDHARVEST.Dialog.ControlPanel.ImportConfigHint"),
+      label: t("WILDHARVEST.Dialog.ControlPanel.ImportConfig"),
+      placeholder: t("WILDHARVEST.Dialog.ControlPanel.ImportConfigPlaceholder")
+    }),
     buttons: [
       {
         action: "import",
@@ -116,7 +123,8 @@ export function openConfigImportDialog(parentDialog, { onImport }) {
       },
       {
         action: "cancel",
-        label: t("WILDHARVEST.Dialog.Cancel")
+        label: t("WILDHARVEST.Dialog.Cancel"),
+        callback: (_event, _button, instance) => instance.close()
       }
     ],
     rejectClose: false

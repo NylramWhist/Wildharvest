@@ -44,7 +44,9 @@ export function focusDialogControl(dialog, selectors) {
   const selectorList = Array.isArray(selectors) ? selectors : [selectors];
   for (const selector of selectorList.filter(Boolean)) {
     const control = dialog?.element?.querySelector?.(selector);
-    if (!control || control.disabled || control.hidden) continue;
+    // A control inside a hidden part (an inactive Workbench tab) cannot take the focus (1.31.0).
+    if (!control || control.disabled || control.hidden || control.closest?.("[hidden]")
+      || control.type === "hidden") continue;
     control.focus?.({ preventScroll: true });
     return true;
   }

@@ -1,0 +1,31 @@
+{{#if session}}
+<section class="wildharvest-gm-scene-bar{{#if closed}} is-closed{{/if}}" aria-labelledby="wildharvest-gm-scene-bar-title">
+  <div class="wildharvest-gm-scene-bar__summary">
+    <i class="{{sceneIcon}} wh-icon wildharvest-gm-scene-bar__icon" aria-hidden="true"></i>
+    <div class="wildharvest-gm-scene-bar__title">
+      <h3 id="wildharvest-gm-scene-bar-title"><span class="wildharvest-gm-scene-bar__label">{{localize "WILDHARVEST.Dialog.ControlPanel.ActiveSceneTitle"}}:</span> {{sessionName}}</h3>
+      <p>{{meta}}{{#if closedMeta}} • {{closedMeta}}{{/if}}</p>
+    </div>
+    <span class="wildharvest-gm-status {{statusClass}}">
+      <i class="{{statusIcon}} wildharvest-gm-status__asset" aria-hidden="true"></i>
+      {{statusLabel}}
+    </span>
+    <div class="wildharvest-gm-scene-bar__progress">
+      <strong>{{progressCount}}</strong>
+      <span>{{localize "WILDHARVEST.Dialog.ControlPanel.Completed"}}</span>
+    </div>
+  </div>
+  {{#if players.length}}
+  <ul class="wildharvest-gm-scene-bar__players" aria-label="{{localize "WILDHARVEST.Dialog.ControlPanel.ScenePlayers"}}">
+    {{#each players}}
+    <li class="wildharvest-gm-scene-player {{entryClass}}">
+      <i class="{{status.iconClass}}" aria-hidden="true"></i>
+      <span class="wildharvest-gm-scene-player__name">{{userName}}</span>
+      <span class="wildharvest-gm-scene-player__state">{{#if result}}{{result}}{{else}}{{status.label}}{{/if}}</span>
+    </li>
+    {{/each}}
+  </ul>
+  {{/if}}
+  {{> wildharvest.gmSessionActions actions}}
+</section>
+{{/if}}
