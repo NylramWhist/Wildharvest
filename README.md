@@ -6,10 +6,27 @@ Current release: `1.39.0`
 
 ## Compatibility
 
-- Foundry VTT: minimum `14`, verified `14.360` (Foundry VTT 13 is no longer supported since 1.21.1)
-- D&D5e: minimum `5.3.0`, verified `5.3.3`
+| Wildharvest | Foundry VTT | D&D5e |
+| --- | --- | --- |
+| **1.20.0** and earlier | 13 | 5.3.x |
+| **1.39.0** and later | **14** (minimum `14`, verified `14.360`) | minimum `5.3.0`, verified `5.3.3` |
 
-The compatibility values remain conservative until additional live Foundry builds are tested by the project owner.
+- Version **1.20.0** is the last release for **Foundry VTT 13**. If you still run Foundry 13, install 1.20.0 from the [releases page](https://github.com/NylramWhist/Wildharvest/releases/tag/v1.20.0) and do not update.
+- Starting with the next release, **1.39.0**, Wildharvest is built for **Foundry VTT 14** (Foundry 13 is no longer supported since 1.21.1). It is the first release published after 1.20.0, so it includes everything added in 1.21 – 1.38 (see below).
+- The compatibility values remain conservative until additional live Foundry builds are tested by the project owner.
+
+## What is new since 1.20.0
+
+- **Foundry VTT 14 and a new look.** The windows are rebuilt on ApplicationV2 with Handlebars templates, follow Foundry's light and dark theme with a gold accent, adapt their layout to the window width and use one set of design tokens (colours, spacing, radii, motion) for hover, pressed, disabled and keyboard-focus states.
+- **Language follows Foundry.** The separate language setting is gone; English and Polish are used according to the language chosen in Foundry.
+- **Skill checks through D&D5e.** The search check is a real D&D5e skill roll, so Reliable Talent, Halfling Lucky and bonuses or advantage from active effects apply (setting **Roll skill checks through D&D5e**).
+- **GM approves the loot (optional).** Before a player's loot is given, the GM can remove items, roll the loot again for the same roll or give nothing.
+- **More ways to define loot.** Presets can use only chosen **folders of a compendium** and **roll tables** as a loot source, and each preset has a **Difficulty** that raises or lowers the Loot Point thresholds.
+- **Better Combined GP value engine.** Limits for different items and for copies per search, a top-up stage that reaches high GP targets on cheap item pools, and a responsive browser while the loot is built.
+- **Clearer scenes and results.** One status bar for the latest scene, a list of who will receive the invitation, a result window with a summary and the most valuable items first, grouped lists by item type, and an optional search result in chat (public or whispered to the GMs).
+- **Smaller, safer saved data.** A smaller data format with an automatic backup before every data update, a single list of presets, **Delete Backups** and a restore function for GMs (see Data backups below).
+
+The full list of changes is in [CHANGELOG.md](./CHANGELOG.md).
 
 ## Features
 
