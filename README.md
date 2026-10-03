@@ -43,7 +43,7 @@ Install through Foundry using this manifest URL:
 https://raw.githubusercontent.com/NylramWhist/Wildharvest/main/module.json
 ```
 
-For manual installation, download `Wildharvest-1.20.0.zip` from the matching GitHub release and extract its `wildharvest` folder into Foundry's `Data/modules` directory.
+For manual installation, download `Wildharvest-1.39.0.zip` from the matching GitHub release and extract it into a `wildharvest` folder inside Foundry's `Data/modules` directory.
 
 ## First setup
 

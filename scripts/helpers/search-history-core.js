@@ -1,4 +1,7 @@
-export const SEARCH_HISTORY_SCHEMA_VERSION = 1;
+import { compactHistoryEntry } from "./data-format-core.js";
+
+// Schema 2 (1.21.0): entries are compact (see data-format-core.js).
+export const SEARCH_HISTORY_SCHEMA_VERSION = 2;
 export const SEARCH_HISTORY_RETENTION_LIMIT = 25;
 
 function normalizeRetentionLimit(value) {
@@ -44,7 +47,8 @@ export function upsertSearchHistoryEntry(rawValue, entry, {
   }
 
   const store = normalizeSearchHistoryStore(rawValue, { retentionLimit });
-  const sessionId = String(entry.sessionId ?? "").trim();
+  const compactEntry = compactHistoryEntry(entry);
+  const sessionId = String(compactEntry.sessionId ?? "").trim();
   const retainedEntries = sessionId
     ? store.entries.filter((candidate) => String(candidate?.sessionId ?? "").trim() !== sessionId)
     : store.entries;
@@ -52,7 +56,18 @@ export function upsertSearchHistoryEntry(rawValue, entry, {
   return {
     ...store,
     updatedAt: String(updatedAt ?? "").trim(),
-    entries: [entry, ...retainedEntries].slice(0, store.retentionLimit)
+    entries: [compactEntry, ...retainedEntries].slice(0, store.retentionLimit)
+  };
+}
+
+// Migration 1 -> 2: same store, every entry compacted. Idempotent.
+export function migrateSearchHistoryStore(rawValue, {
+  retentionLimit = SEARCH_HISTORY_RETENTION_LIMIT
+} = {}) {
+  const store = normalizeSearchHistoryStore(rawValue, { retentionLimit });
+  return {
+    ...store,
+    entries: store.entries.map(compactHistoryEntry).filter(Boolean)
   };
 }
 
